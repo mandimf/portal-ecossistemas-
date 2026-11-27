@@ -91,7 +91,7 @@ def aplicar_estilos_css() -> None:
             border-top: 4px solid #004a99;
             border-radius: 12px;
             padding: 18px 18px 14px 18px;
-            min-height: 215px;
+            min-height: 185px;
             box-shadow: 0 2px 8px rgba(15, 35, 65, 0.06);
             margin-bottom: 10px;
         }
@@ -101,34 +101,16 @@ def aplicar_estilos_css() -> None:
         .portal-card-ft {
             border-top-color: #0d9488;
         }
-        .portal-badge {
-            display: inline-block;
-            font-size: 0.72rem;
-            font-weight: 600;
-            padding: 2px 8px;
-            border-radius: 999px;
-            background-color: #e6effa;
-            color: #004a99;
-            margin-bottom: 8px;
-        }
-        .portal-badge-stub {
-            background-color: #fef3c7;
-            color: #92400e;
-        }
-        .portal-badge-ft {
-            background-color: #ccfbf1;
-            color: #115e59;
-        }
         .portal-title {
             font-size: 1.15rem;
             font-weight: 700;
             color: #0f2341;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
         }
         .portal-desc {
             font-size: 0.88rem;
             color: #4b5563;
-            line-height: 1.4;
+            line-height: 1.45;
         }
         .obs-discreta {
             font-size: 0.80rem;
@@ -374,12 +356,6 @@ def calcular_entrega_ativos_kg_ton(
     dosagem_kg_ton: float,
     df_garantias: pd.DataFrame,
 ) -> Dict[str, Any]:
-    """
-    Calcula a entrega por molécula com dosagem em kg/ton (1 kg/ton = 1.000 g/ton):
-    - unidade '%'     -> ppm (mg/kg) = dosagem_kg_ton * valor_pct * 10
-    - unidade 'mg/kg' -> ppm (mg/kg) = dosagem_kg_ton * (valor_mg_kg / 1000)
-    - unidade 'UFC/g' -> UFC/g = dosagem_kg_ton * (valor_ufc_g / 1000)
-    """
     gar_prod = df_garantias[df_garantias["id_produto"] == id_produto]
     if gar_prod.empty or dosagem_kg_ton <= 0:
         return {
@@ -768,7 +744,7 @@ def inicializar_sessao(lista_produtos: List[str]) -> None:
                 "matriz": "Farinha de Vísceras (FV)",
                 "produto": prod_inicial,
                 "dosagem": 0.500,
-                "observacao": "Aplicação primária no fluxo",
+                "observacao": "",
                 "preco_kg": 15.00,
                 "share": 100,
             },
@@ -777,7 +753,7 @@ def inicializar_sessao(lista_produtos: List[str]) -> None:
                 "matriz": "Óleo de Frango",
                 "produto": prod_inicial,
                 "dosagem": 1.000,
-                "observacao": "Estabilização lipídica",
+                "observacao": "",
                 "preco_kg": 18.00,
                 "share": 100,
             },
@@ -805,7 +781,7 @@ def inicializar_sessao(lista_produtos: List[str]) -> None:
                 "matriz": "Farinha de Carne e Ossos (FCO)",
                 "produto": prod_inicial,
                 "dosagem": 0.500,
-                "observacao": "Estabilização pós-prensa",
+                "observacao": "",
                 "preco_kg": 15.00,
                 "share": 100,
             },
@@ -814,7 +790,7 @@ def inicializar_sessao(lista_produtos: List[str]) -> None:
                 "matriz": "Sebo Bovino",
                 "produto": prod_inicial,
                 "dosagem": 0.800,
-                "observacao": "Proteção oxidativa",
+                "observacao": "",
                 "preco_kg": 18.00,
                 "share": 100,
             },
@@ -827,7 +803,7 @@ def inicializar_sessao(lista_produtos: List[str]) -> None:
                 "matriz": "Farinha de Carne e Ossos Suína",
                 "produto": prod_inicial,
                 "dosagem": 0.500,
-                "observacao": "Estabilização na moagem",
+                "observacao": "",
                 "preco_kg": 15.00,
                 "share": 100,
             },
@@ -836,7 +812,7 @@ def inicializar_sessao(lista_produtos: List[str]) -> None:
                 "matriz": "Gordura / Óleo Suíno",
                 "produto": prod_inicial,
                 "dosagem": 1.000,
-                "observacao": "Proteção oxidativa",
+                "observacao": "",
                 "preco_kg": 18.00,
                 "share": 100,
             },
@@ -891,7 +867,7 @@ def renderizar_etapa_cadastro_cliente(
         st.session_state.consultor_nome = st.text_input(
             "Nome do Consultor:",
             value=st.session_state.consultor_nome,
-            placeholder="Ex.: Diogo Bracciali",
+            placeholder="Ítalo Ferreira",
             key=f"cons_nome_{ecossistema_label}",
         )
         st.session_state.consultor_email = st.text_input(
@@ -1151,34 +1127,34 @@ def renderizar_bloco_pdf(
 
 # =============================================================================
 # TELA INICIAL: PORTAL DE ECOSSISTEMAS (HUB CENTRAL)
+# Ordem: 1. Consulta de FTs | 2. Fábrica de Ração | 3. Avicultura | 4. FFO Bovinos | 5. FFO Suínos
 # =============================================================================
 def renderizar_portal_hub(df_produtos: pd.DataFrame, df_garantias: pd.DataFrame) -> None:
-    st.title("🌐 Portal Comercial & Técnico CFS (US$)")
+    st.title("🌐 Portal Comercial & Técnico CFS")
     st.markdown("Selecione o ecossistema operacional ou acesse a consulta rápida de Fichas Técnicas:")
     st.markdown("")
 
-    # Linha 1: 3 Cards principais
+    # Linha 1: Consulta de FTs -> Fábrica de Ração -> Avicultura
     col1, col2, col3 = st.columns(3)
 
     with col1:
         st.markdown(
-            """
-            <div class="portal-card">
-                <span class="portal-badge">Operação Integrada</span>
-                <div class="portal-title">🐔 Avicultura</div>
+            f"""
+            <div class="portal-card portal-card-ft">
+                <div class="portal-title">📄 Consulta de FTs</div>
                 <div class="portal-desc">
-                    Balanço de massa completo da fábrica de ração ao abatedouro e graxaria
-                    (FV, FPS e Óleo de Frango), cesta em kg/ton, ppm, Share (%) e proposta PDF.
+                    Consulta rápida e independente de Fichas Técnicas por linha, estado físico
+                    e match exato de princípios ativos ({len(df_produtos)} produtos | {len(df_garantias)} garantias).
                 </div>
             </div>
             """,
             unsafe_allow_html=True,
         )
         st.button(
-            "Abrir Avicultura ➡️",
-            key="card_btn_aves",
+            "Consultar FTs ➡️",
+            key="card_btn_ft",
             on_click=navegar_para,
-            args=("avicultura",),
+            args=("consulta_ft",),
             type="primary",
             use_container_width=True,
         )
@@ -1186,57 +1162,7 @@ def renderizar_portal_hub(df_produtos: pd.DataFrame, df_garantias: pd.DataFrame)
     with col2:
         st.markdown(
             """
-            <div class="portal-card portal-card-stub">
-                <span class="portal-badge portal-badge-stub">Base Provisória</span>
-                <div class="portal-title">🐂 FFO Bovinos</div>
-                <div class="portal-desc">
-                    Dimensionamento de matéria-prima bovina e rendimentos de subprodutos
-                    (Farinha de Carne e Ossos, Sebo Bovino), dosagem em kg/ton, ppm e US$.
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        st.button(
-            "Abrir FFO Bovinos ➡️",
-            key="card_btn_bov",
-            on_click=navegar_para,
-            args=("ffo_bovinos",),
-            use_container_width=True,
-        )
-
-    with col3:
-        st.markdown(
-            """
-            <div class="portal-card portal-card-stub">
-                <span class="portal-badge portal-badge-stub">Base Provisória</span>
-                <div class="portal-title">🐷 FFO Suínos</div>
-                <div class="portal-desc">
-                    Dimensionamento de matéria-prima suína e rendimentos de farinha e gordura
-                    suína, montagem de cesta em kg/ton, entrega em ppm e proposta em US$.
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        st.button(
-            "Abrir FFO Suínos ➡️",
-            key="card_btn_sui",
-            on_click=navegar_para,
-            args=("ffo_suinos",),
-            use_container_width=True,
-        )
-
-    st.markdown("")
-
-    # Linha 2: Fábrica de Ração Comercial + Consulta de FTs
-    col4, col5, _ = st.columns([1, 1, 1])
-
-    with col4:
-        st.markdown(
-            """
             <div class="portal-card">
-                <span class="portal-badge">Multi-Espécie</span>
                 <div class="portal-title">🏭 Fábrica de Ração Comercial</div>
                 <div class="portal-desc">
                     Cadastro dinâmico de misturadores, volumes por espécie (Ruminantes, Aves,
@@ -1255,25 +1181,72 @@ def renderizar_portal_hub(df_produtos: pd.DataFrame, df_garantias: pd.DataFrame)
             use_container_width=True,
         )
 
-    with col5:
+    with col3:
         st.markdown(
             """
-            <div class="portal-card portal-card-ft">
-                <span class="portal-badge portal-badge-ft">Base Oficial Sync</span>
-                <div class="portal-title">📄 Consulta de FTs</div>
+            <div class="portal-card">
+                <div class="portal-title">🐔 Avicultura</div>
                 <div class="portal-desc">
-                    Consulta rápida e independente de Fichas Técnicas por linha, estado físico
-                    e match exato de princípios ativos ({0} produtos | {1} garantias).
+                    Balanço de massa completo da fábrica de ração ao abatedouro e graxaria
+                    (FV, FPS e Óleo de Frango), cesta em kg/ton, ppm, Share (%) e proposta PDF.
                 </div>
             </div>
-            """.format(len(df_produtos), len(df_garantias)),
+            """,
             unsafe_allow_html=True,
         )
         st.button(
-            "Consultar FTs ➡️",
-            key="card_btn_ft",
+            "Abrir Avicultura ➡️",
+            key="card_btn_aves",
             on_click=navegar_para,
-            args=("consulta_ft",),
+            args=("avicultura",),
+            type="primary",
+            use_container_width=True,
+        )
+
+    st.markdown("")
+
+    # Linha 2: FFO Bovinos -> FFO Suínos
+    col4, col5, _ = st.columns([1, 1, 1])
+
+    with col4:
+        st.markdown(
+            """
+            <div class="portal-card portal-card-stub">
+                <div class="portal-title">🐂 FFO Bovinos</div>
+                <div class="portal-desc">
+                    Dimensionamento de matéria-prima bovina e rendimentos de subprodutos
+                    (Farinha de Carne e Ossos, Sebo Bovino), dosagem em kg/ton, ppm e proposta PDF.
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        st.button(
+            "Abrir FFO Bovinos ➡️",
+            key="card_btn_bov",
+            on_click=navegar_para,
+            args=("ffo_bovinos",),
+            use_container_width=True,
+        )
+
+    with col5:
+        st.markdown(
+            """
+            <div class="portal-card portal-card-stub">
+                <div class="portal-title">🐷 FFO Suínos</div>
+                <div class="portal-desc">
+                    Dimensionamento de matéria-prima suína e rendimentos de farinha e gordura
+                    suína, montagem de cesta em kg/ton, entrega em ppm e proposta PDF.
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        st.button(
+            "Abrir FFO Suínos ➡️",
+            key="card_btn_sui",
+            on_click=navegar_para,
+            args=("ffo_suinos",),
             use_container_width=True,
         )
 
@@ -1287,7 +1260,7 @@ def renderizar_ecossistema_avicultura(
     lista_produtos: List[str],
     mapa_produtos: Dict[str, Any],
 ) -> None:
-    st.title("🐔 Ecossistema Comercial - Avicultura (US$)")
+    st.title("🐔 Ecossistema Comercial - Avicultura")
 
     aves_mes, volumes = calcular_balanco_massa_aves(
         tipo_gatilho=st.session_state.tipo_gatilho,
@@ -1520,6 +1493,7 @@ def renderizar_ecossistema_avicultura(
                 item["observacao"] = st.text_input(
                     f"Observação #{idx + 1}:",
                     value=str(item.get("observacao", "")),
+                    placeholder="Ex.: Ponto de dosagem, qual linha, especificidade, etc.",
                     key=f"aves_obs_{item['id']}",
                 )
             with c5:
@@ -1724,18 +1698,15 @@ def renderizar_ecossistema_avicultura(
 # ECOSSISTEMA 2: FÁBRICA DE RAÇÃO COMERCIAL
 # =============================================================================
 def sincronizar_especies_cesta_fabrica(lista_produtos: List[str]) -> None:
-    """Garante que toda espécie adicionada na Etapa 1 apareça automaticamente como linha na cesta."""
     especies_cadastradas = st.session_state.fab_especies
     ids_presentes_na_cesta = {it.get("esp_id") for it in st.session_state.fab_cesta}
     mapa_esp_atual = {e["id"]: e["especie"] for e in especies_cadastradas}
 
-    # Atualiza o nome da espécie nas linhas já vinculadas caso o usuário tenha trocado o dropdown
     for it in st.session_state.fab_cesta:
         eid = it.get("esp_id")
         if eid in mapa_esp_atual:
             it["especie"] = mapa_esp_atual[eid]
 
-    # Cria automaticamente uma nova linha na cesta para cada espécie nova
     prod_padrao = lista_produtos[0] if lista_produtos else ""
     for esp in especies_cadastradas:
         if esp["id"] not in ids_presentes_na_cesta:
@@ -1761,7 +1732,7 @@ def renderizar_ecossistema_fabrica_racao(
     lista_produtos: List[str],
     mapa_produtos: Dict[str, Any],
 ) -> None:
-    st.title("🏭 Ecossistema Comercial - Fábricas de Ração (US$)")
+    st.title("🏭 Ecossistema Comercial - Fábricas de Ração")
 
     sincronizar_especies_cesta_fabrica(lista_produtos)
 
@@ -1785,7 +1756,6 @@ def renderizar_ecossistema_fabrica_racao(
 
     st.markdown("---")
 
-    # Calcula volumes consolidados por espécie
     vol_por_especie: Dict[str, int] = {}
     for esp in st.session_state.fab_especies:
         nome_e = esp["especie"]
@@ -1805,7 +1775,6 @@ def renderizar_ecossistema_fabrica_racao(
         if st.session_state.cliente_nome:
             st.info(f"👤 **Cliente Ativo:** {st.session_state.cliente_nome}")
 
-        # Bloco 1A: Misturadores dinâmicos
         st.subheader("⚙️ Misturadores da Fábrica")
         mist_remover: List[int] = []
         for idx, mist in enumerate(st.session_state.fab_misturadores):
@@ -1856,7 +1825,6 @@ def renderizar_ecossistema_fabrica_racao(
 
         st.markdown("---")
 
-        # Bloco 1B: Volumes por Espécie (dropdown dinâmico + inteiro ton/mês + observação)
         st.subheader("🌾 Volumes por Espécie (ton/mês)")
         esp_remover: List[int] = []
         for idx, esp in enumerate(st.session_state.fab_especies):
@@ -1914,7 +1882,6 @@ def renderizar_ecossistema_fabrica_racao(
             st.session_state.fab_next_esp_id += 1
             st.rerun()
 
-        # Recalcula resumo após edição
         vol_por_especie = {}
         for esp in st.session_state.fab_especies:
             nome_e = esp["especie"]
@@ -1936,14 +1903,16 @@ def renderizar_ecossistema_fabrica_racao(
         if st.session_state.cliente_nome:
             st.info(f"👤 **Cliente Ativo:** {st.session_state.cliente_nome}")
 
-        # Resumo rápido das espécies carregadas da Etapa 1
         resumo_tags = " | ".join(
-            [f"**{k}:** {fmt_br(float(v), 0)} ton/mês" for k, v in vol_por_especie.items() if k != "Total Fábrica de Ração"]
+            [
+                f"**{k}:** {fmt_br(float(v), 0)} ton/mês"
+                for k, v in vol_por_especie.items()
+                if k != "Total Fábrica de Ração"
+            ]
         )
         if resumo_tags:
             st.caption(f"🌾 **Espécies carregadas da Etapa 1:** {resumo_tags}")
 
-        # Catálogo SEM Limite Regulatório conforme solicitado
         renderizar_catalogo_ft(
             df_produtos,
             df_garantias,
@@ -2009,6 +1978,7 @@ def renderizar_ecossistema_fabrica_racao(
                 item["observacao"] = st.text_input(
                     f"Observação #{idx + 1}:",
                     value=str(item.get("observacao", "")),
+                    placeholder="Ex.: Ponto de dosagem, qual linha, especificidade, etc.",
                     key=f"fab_c_obs_{item['id']}",
                 )
             with c6:
@@ -2034,7 +2004,6 @@ def renderizar_ecossistema_fabrica_racao(
 
             entrega = calcular_entrega_ativos_kg_ton(id_prod, float(item["dosagem"]), df_garantias)
             nota_dupla = f" *(Nota: {entrega['observacao_dupla']})*" if entrega["observacao_dupla"] else ""
-            # Sem Limite Regulatório conforme solicitado
             st.caption(
                 f"📌 **{item['produto']} ({est_fisico} | {rev_ft})** | "
                 f"**Ponto:** {item['ponto']} | "
@@ -2228,7 +2197,7 @@ def renderizar_ecossistema_ffo_provisorio(
     mapa_produtos: Dict[str, Any],
 ) -> None:
     eh_bov = tipo == "ffo_bovinos"
-    titulo = "🐂 Ecossistema Comercial - FFO Bovinos (US$)" if eh_bov else "🐷 Ecossistema Comercial - FFO Suínos (US$)"
+    titulo = "🐂 Ecossistema Comercial - FFO Bovinos" if eh_bov else "🐷 Ecossistema Comercial - FFO Suínos"
     prefixo = "bov" if eh_bov else "sui"
     etapa_key = f"{prefixo}_etapa"
     cesta_key = f"{prefixo}_cesta"
@@ -2423,6 +2392,7 @@ def renderizar_ecossistema_ffo_provisorio(
                 item["observacao"] = st.text_input(
                     f"Observação #{idx + 1}:",
                     value=str(item.get("observacao", "")),
+                    placeholder="Ex.: Ponto de dosagem, qual linha, especificidade, etc.",
                     key=f"{prefixo}_obs_{item['id']}",
                 )
             with c5:
@@ -2685,11 +2655,11 @@ def main() -> None:
 
         opcoes_portal = {
             "portal": "🏠 Início (Todos os Ecossistemas)",
+            "consulta_ft": "📄 Consulta de FTs",
+            "fabrica_racao": "🏭 Fábrica de Ração Comercial",
             "avicultura": "🐔 Avicultura",
             "ffo_bovinos": "🐂 FFO Bovinos (Provisório)",
             "ffo_suinos": "🐷 FFO Suínos (Provisório)",
-            "fabrica_racao": "🏭 Fábrica de Ração Comercial",
-            "consulta_ft": "📄 Consulta de FTs",
         }
         chaves_portal = list(opcoes_portal.keys())
         atual = st.session_state.get("ecossistema_ativo", "portal")
@@ -2715,7 +2685,6 @@ def main() -> None:
 
     inicializar_sessao(lista_produtos)
 
-    # Botão persistente de retorno ao Portal quando estiver dentro de um ecossistema
     if st.session_state.ecossistema_ativo != "portal":
         col_back, col_cli_badge = st.columns([1.4, 4.6])
         with col_back:
@@ -2730,18 +2699,17 @@ def main() -> None:
             if st.session_state.cliente_nome.strip():
                 st.caption(f"Cliente ativo na sessão: **{st.session_state.cliente_nome}**")
 
-    # Roteamento das telas
     destino = st.session_state.ecossistema_ativo
     if destino == "portal":
         renderizar_portal_hub(df_produtos, df_garantias)
-    elif destino == "avicultura":
-        renderizar_ecossistema_avicultura(df_produtos, df_garantias, lista_produtos, mapa_produtos)
-    elif destino == "fabrica_racao":
-        renderizar_ecossistema_fabrica_racao(df_produtos, df_garantias, lista_produtos, mapa_produtos)
-    elif destino in ("ffo_bovinos", "ffo_suinos"):
-        renderizar_ecossistema_ffo_provisorio(destino, df_produtos, df_garantias, lista_produtos, mapa_produtos)
     elif destino == "consulta_ft":
         renderizar_modulo_consulta_ft(df_produtos, df_garantias)
+    elif destino == "fabrica_racao":
+        renderizar_ecossistema_fabrica_racao(df_produtos, df_garantias, lista_produtos, mapa_produtos)
+    elif destino == "avicultura":
+        renderizar_ecossistema_avicultura(df_produtos, df_garantias, lista_produtos, mapa_produtos)
+    elif destino in ("ffo_bovinos", "ffo_suinos"):
+        renderizar_ecossistema_ffo_provisorio(destino, df_produtos, df_garantias, lista_produtos, mapa_produtos)
 
 
 if __name__ == "__main__":
