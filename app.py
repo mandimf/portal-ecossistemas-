@@ -88,71 +88,37 @@ ECOSSISTEMAS_VALIDOS = {
 
 
 # =============================================================================
-# ESTILOS CSS (PALETA LARANJA, HUB DE CARDS E AJUSTES VISUAIS)
+# ESTILOS CSS (HUB DE CARDS E AJUSTES VISUAIS)
 # =============================================================================
 def aplicar_estilos_css() -> None:
     st.markdown(
         """
         <style>
-        /* Paleta Laranja:
-           Light Orange #FFD580 | Pastel Orange #FFC067 | Yellow-Orange #FFB343
-           Orange #FFA500 | Carrot Orange #ED9121 | Apricot #FFB27F
-           Cantaloupe #FFA95C | Bright Orange #FF7E00 | Tangerine #F28500 | Pumpkin #FF7518
-        */
-        .cfs-top-header {
-            background: linear-gradient(90deg, #FFF7E6 0%, #FFE6C2 100%);
-            border: 1px solid #FFC067;
-            border-left: 6px solid #FF7E00;
-            border-radius: 10px;
-            padding: 10px 16px;
-            margin-bottom: 6px;
-        }
-        .cfs-top-brand {
-            font-size: 0.92rem;
-            font-weight: 800;
-            letter-spacing: 0.05em;
-            color: #7C2D12;
-            text-transform: uppercase;
-            display: block;
-        }
-        .cfs-top-sub {
-            font-size: 0.82rem;
-            font-weight: 600;
-            color: #B45309;
-            display: block;
-        }
-        .cfs-header-rule {
-            margin: 6px 0 14px 0;
-            border: 0;
-            border-top: 2px solid #FFB343;
-        }
         .portal-card {
-            background: linear-gradient(155deg, #FFFFFF 0%, #FFF8EC 100%);
-            border: 1px solid #FFC067;
-            border-top: 4px solid #FF7E00;
+            background: linear-gradient(145deg, #ffffff 0%, #f4f7fb 100%);
+            border: 1px solid #d7e1ec;
+            border-top: 4px solid #004a99;
             border-radius: 12px;
             padding: 18px 18px 14px 18px;
             min-height: 185px;
-            box-shadow: 0 3px 10px rgba(242, 133, 0, 0.10);
+            box-shadow: 0 2px 8px rgba(15, 35, 65, 0.06);
             margin-bottom: 10px;
         }
         .portal-card-stub {
-            border-top-color: #ED9121;
-            background: linear-gradient(155deg, #FFFFFF 0%, #FFF3E0 100%);
+            border-top-color: #d97706;
         }
         .portal-card-ft {
-            border-top-color: #FF7518;
-            background: linear-gradient(155deg, #FFFFFF 0%, #FFF5EB 100%);
+            border-top-color: #0d9488;
         }
         .portal-title {
             font-size: 1.15rem;
             font-weight: 700;
-            color: #7C2D12;
+            color: #0f2341;
             margin-bottom: 8px;
         }
         .portal-desc {
             font-size: 0.88rem;
-            color: #4B5563;
+            color: #4b5563;
             line-height: 1.45;
         }
         .obs-discreta {
@@ -163,51 +129,10 @@ def aplicar_estilos_css() -> None:
             margin-bottom: 10px;
             display: block;
         }
-        div.stButton > button[kind="primary"],
-        div.stDownloadButton > button[kind="primary"] {
-            background: linear-gradient(135deg, #FF7E00 0%, #FF7518 100%);
-            border: 1px solid #F28500;
-            color: #FFFFFF;
-            font-weight: 600;
-        }
-        div.stButton > button[kind="primary"]:hover,
-        div.stDownloadButton > button[kind="primary"]:hover {
-            background: linear-gradient(135deg, #F28500 0%, #ED9121 100%);
-            border: 1px solid #B45309;
-            color: #FFFFFF;
-        }
         </style>
         """,
         unsafe_allow_html=True,
     )
-
-
-def renderizar_cabecalho_global() -> None:
-    """Renderiza o cabeçalho com o logo da CFS (com fallback textual) no topo de todas as páginas."""
-    col_brand, col_logo = st.columns([4.5, 1.5], vertical_alignment="center")
-    with col_brand:
-        st.markdown(
-            "<div class='cfs-top-header'>"
-            "<span class='cfs-top-brand'>CFS • Camlin Fine Sciences</span>"
-            "<span class='cfs-top-sub'>Ecossistemas &amp; Fichas Técnicas</span>"
-            "</div>",
-            unsafe_allow_html=True,
-        )
-    with col_logo:
-        if os.path.exists(LOGO_PATH):
-            try:
-                st.image(LOGO_PATH, width=165)
-            except Exception:
-                st.markdown(
-                    "<div style='text-align:right; font-weight:800; color:#FF7E00;'>CFS</div>",
-                    unsafe_allow_html=True,
-                )
-        else:
-            st.markdown(
-                "<div style='text-align:right; font-weight:800; color:#FF7E00;'>CFS</div>",
-                unsafe_allow_html=True,
-            )
-    st.markdown("<hr class='cfs-header-rule'>", unsafe_allow_html=True)
 
 
 # =============================================================================
@@ -555,13 +480,28 @@ def calcular_balanco_massa_aves(
 
 class PropostaCFSPDF(FPDF):
     def footer(self) -> None:
-        self.set_y(-18)
+        self.set_y(-24)
         self.set_draw_color(210, 215, 220)
         self.line(15, self.get_y(), 195, self.get_y())
         self.ln(3)
+        y_base = self.get_y()
+
         self.set_font("Helvetica", "B", 8)
         self.set_text_color(100, 110, 120)
-        self.cell(0, 5, "BRINGING SCIENCE TO EVERYDAY LIFE", align="C", ln=0)
+        self.set_xy(15, y_base + 3)
+        self.cell(100, 5, "BRINGING SCIENCE TO EVERYDAY LIFE", ln=0)
+
+        if os.path.exists(LOGO_PATH):
+            try:
+                self.image(LOGO_PATH, x=155, y=y_base, w=40)
+                return
+            except Exception:
+                pass
+
+        self.set_xy(125, y_base + 1)
+        self.set_font("Helvetica", "B", 11)
+        self.set_text_color(0, 74, 153)
+        self.cell(70, 5, "CFS  Camlin Fine Sciences", align="R", ln=1)
 
 
 def gerar_pdf_proposta(
@@ -582,44 +522,28 @@ def gerar_pdf_proposta(
     linhas_proposta: List[Dict[str, Any]],
 ) -> bytes:
     pdf = PropostaCFSPDF(orientation="P", unit="mm", format="A4")
-    pdf.set_auto_page_break(auto=True, margin=24)
-    pdf.set_margins(15, 14, 15)
+    pdf.set_auto_page_break(auto=True, margin=28)
+    pdf.set_margins(15, 16, 15)
     pdf.add_page()
 
-    pdf.set_xy(15, 14)
     pdf.set_font("Helvetica", "B", 18)
-    pdf.set_text_color(124, 45, 18)
-    pdf.cell(115, 8, pdf_safe("Proposta Comercial"), ln=1)
+    pdf.set_text_color(15, 35, 65)
+    pdf.cell(120, 9, pdf_safe("Proposta Comercial"), ln=0)
 
-    pdf.set_x(15)
-    pdf.set_font("Helvetica", "", 9.5)
+    pdf.set_font("Helvetica", "", 10)
     pdf.set_text_color(90, 95, 105)
-    pdf.cell(115, 5, pdf_safe(f"Emissão: {datetime.now().strftime('%d/%m/%Y')}"), ln=0)
+    pdf.cell(60, 9, pdf_safe(f"Emissão: {datetime.now().strftime('%d/%m/%Y')}"), align="R", ln=1)
 
-    logo_inserido = False
-    if os.path.exists(LOGO_PATH):
-        try:
-            pdf.image(LOGO_PATH, x=155, y=12, w=40)
-            logo_inserido = True
-        except Exception:
-            logo_inserido = False
-
-    if not logo_inserido:
-        pdf.set_xy(125, 15)
-        pdf.set_font("Helvetica", "B", 12)
-        pdf.set_text_color(242, 133, 0)
-        pdf.cell(70, 6, "CFS  Camlin Fine Sciences", align="R", ln=0)
-
-    pdf.set_draw_color(255, 126, 0)
-    pdf.set_line_width(0.7)
-    pdf.line(15, 31, 195, 31)
-    pdf.set_y(36)
+    pdf.set_draw_color(0, 74, 153)
+    pdf.set_line_width(0.6)
+    pdf.line(15, pdf.get_y() + 1, 195, pdf.get_y() + 1)
+    pdf.ln(7)
 
     y_info = pdf.get_y()
 
     pdf.set_xy(15, y_info)
     pdf.set_font("Helvetica", "B", 8)
-    pdf.set_text_color(242, 133, 0)
+    pdf.set_text_color(0, 74, 153)
     pdf.cell(85, 5, "FORNECEDOR", ln=1)
     pdf.set_x(15)
     pdf.set_font("Helvetica", "B", 10)
@@ -634,7 +558,7 @@ def gerar_pdf_proposta(
 
     pdf.set_xy(105, y_info)
     pdf.set_font("Helvetica", "B", 8)
-    pdf.set_text_color(242, 133, 0)
+    pdf.set_text_color(0, 74, 153)
     pdf.cell(90, 5, "CLIENTE", ln=1)
     pdf.set_x(105)
     pdf.set_font("Helvetica", "B", 10)
@@ -677,7 +601,7 @@ def gerar_pdf_proposta(
         widths = [64, 32, 32, 52]
         aligns = ["L", "R", "R", "L"]
 
-    pdf.set_fill_color(242, 133, 0)
+    pdf.set_fill_color(15, 35, 65)
     pdf.set_text_color(255, 255, 255)
     pdf.set_font("Helvetica", "B", 8.5)
     for h, w, al in zip(headers, widths, aligns):
@@ -714,13 +638,13 @@ def gerar_pdf_proposta(
             max_lines = max(max_lines, len(linhas_calc))
         row_h = max(8.0, max_lines * line_h + 2.5)
 
-        if pdf.get_y() + row_h > 268:
+        if pdf.get_y() + row_h > 265:
             pdf.add_page()
 
         x_start = 15.0
         y_start = pdf.get_y()
         if idx_row % 2 == 1:
-            pdf.set_fill_color(255, 243, 224)
+            pdf.set_fill_color(246, 248, 251)
             pdf.rect(x_start, y_start, sum(widths), row_h, style="F")
 
         cur_x = x_start
@@ -735,7 +659,7 @@ def gerar_pdf_proposta(
     pdf.ln(8)
 
     pdf.set_font("Helvetica", "B", 9.5)
-    pdf.set_text_color(124, 45, 18)
+    pdf.set_text_color(15, 35, 65)
     pdf.cell(0, 6, pdf_safe("Condições Comerciais"), ln=1)
     pdf.ln(1)
 
@@ -896,7 +820,7 @@ def inicializar_sessao(lista_produtos: List[str]) -> None:
 
 
 # =============================================================================
-# NAVEGAÇÃO (CALLBACK + QUERY_PARAMS SEM RERUN DUPLICADO)
+# NAVEGAÇÃO (SINCRONIZADA COM QUERY_PARAMS E SEM CONFLITO DE WIDGET KEY)
 # =============================================================================
 def _set_ecossistema(ecossistema: str) -> None:
     destino = ecossistema if ecossistema in ECOSSISTEMAS_VALIDOS else "portal"
@@ -905,11 +829,6 @@ def _set_ecossistema(ecossistema: str) -> None:
         st.query_params["eco"] = destino
     except Exception:
         pass
-
-
-def navegar_para(ecossistema: str) -> None:
-    _set_ecossistema(ecossistema)
-    st.rerun()
 
 
 def mudar_etapa(chave_estado: str, nova_etapa: int) -> None:
@@ -1221,6 +1140,7 @@ def renderizar_portal_hub(df_produtos: pd.DataFrame, df_garantias: pd.DataFrame)
     st.markdown("Selecione o ecossistema operacional ou acesse a consulta rápida de Fichas Técnicas:")
     st.markdown("")
 
+    # Linha 1: Consulta de FTs -> Fábrica de Ração -> Avicultura
     col1, col2, col3 = st.columns(3)
 
     with col1:
@@ -1237,13 +1157,13 @@ def renderizar_portal_hub(df_produtos: pd.DataFrame, df_garantias: pd.DataFrame)
             unsafe_allow_html=True,
         )
         st.button(
-            "Consultar FTs ➡️",
-            key="card_btn_ft",
-            type="primary",
-            use_container_width=True,
-            on_click=_set_ecossistema,
-            args=("consulta_ft",),
-        )
+    "Consultar FTs ➡️",
+    key="card_btn_ft",
+    type="primary",
+    use_container_width=True,
+    on_click=_set_ecossistema,
+    args=("consulta_ft",),
+)
 
     with col2:
         st.markdown(
@@ -1258,14 +1178,8 @@ def renderizar_portal_hub(df_produtos: pd.DataFrame, df_garantias: pd.DataFrame)
             """,
             unsafe_allow_html=True,
         )
-        st.button(
-            "Abrir Fábrica de Ração ➡️",
-            key="card_btn_fab",
-            type="primary",
-            use_container_width=True,
-            on_click=_set_ecossistema,
-            args=("fabrica_racao",),
-        )
+        if st.button("Abrir Fábrica de Ração ➡️", key="card_btn_fab", type="primary", use_container_width=True):
+            navegar_para("fabrica_racao")
 
     with col3:
         st.markdown(
@@ -1280,17 +1194,12 @@ def renderizar_portal_hub(df_produtos: pd.DataFrame, df_garantias: pd.DataFrame)
             """,
             unsafe_allow_html=True,
         )
-        st.button(
-            "Abrir Avicultura ➡️",
-            key="card_btn_aves",
-            type="primary",
-            use_container_width=True,
-            on_click=_set_ecossistema,
-            args=("avicultura",),
-        )
+        if st.button("Abrir Avicultura ➡️", key="card_btn_aves", type="primary", use_container_width=True):
+            navegar_para("avicultura")
 
     st.markdown("")
 
+    # Linha 2: FFO Bovinos -> FFO Suínos
     col4, col5, _ = st.columns([1, 1, 1])
 
     with col4:
@@ -1306,13 +1215,8 @@ def renderizar_portal_hub(df_produtos: pd.DataFrame, df_garantias: pd.DataFrame)
             """,
             unsafe_allow_html=True,
         )
-        st.button(
-            "Abrir FFO Bovinos ➡️",
-            key="card_btn_bov",
-            use_container_width=True,
-            on_click=_set_ecossistema,
-            args=("ffo_bovinos",),
-        )
+        if st.button("Abrir FFO Bovinos ➡️", key="card_btn_bov", use_container_width=True):
+            navegar_para("ffo_bovinos")
 
     with col5:
         st.markdown(
@@ -1327,13 +1231,8 @@ def renderizar_portal_hub(df_produtos: pd.DataFrame, df_garantias: pd.DataFrame)
             """,
             unsafe_allow_html=True,
         )
-        st.button(
-            "Abrir FFO Suínos ➡️",
-            key="card_btn_sui",
-            use_container_width=True,
-            on_click=_set_ecossistema,
-            args=("ffo_suinos",),
-        )
+        if st.button("Abrir FFO Suínos ➡️", key="card_btn_sui", use_container_width=True):
+            navegar_para("ffo_suinos")
 
 
 # =============================================================================
@@ -1381,6 +1280,7 @@ def renderizar_ecossistema_avicultura(
 
     st.markdown("---")
 
+    # ETAPA 0
     if st.session_state.aves_etapa == 0:
         resumo_vol = (
             f"Ração: {fmt_br(volumes['Fábrica de Ração'], 1)} t | "
@@ -1389,6 +1289,7 @@ def renderizar_ecossistema_avicultura(
         renderizar_etapa_cadastro_cliente("Avicultura", resumo_vol, len(st.session_state.aves_cesta))
         renderizar_setas_etapa("aves_etapa", 0, 4)
 
+    # ETAPA 1
     elif st.session_state.aves_etapa == 1:
         st.header("Etapa 1: Cálculo de Produção de Ração & FFO")
         if st.session_state.cliente_nome:
@@ -1524,6 +1425,7 @@ def renderizar_ecossistema_avicultura(
 
         renderizar_setas_etapa("aves_etapa", 1, 4)
 
+    # ETAPA 2
     elif st.session_state.aves_etapa == 2:
         st.header("Etapa 2: Produtos & Dosagens")
         if st.session_state.cliente_nome:
@@ -1669,6 +1571,7 @@ def renderizar_ecossistema_avicultura(
 
         renderizar_setas_etapa("aves_etapa", 2, 4)
 
+    # ETAPA 3
     elif st.session_state.aves_etapa == 3:
         st.header("Etapa 3: Faturamento & Proposta (US$)")
         if st.session_state.cliente_nome:
@@ -1779,6 +1682,7 @@ def renderizar_ecossistema_avicultura(
 # ECOSSISTEMA 2: FÁBRICA DE RAÇÃO COMERCIAL
 # =============================================================================
 def sincronizar_especies_cesta_fabrica(lista_produtos: List[str]) -> None:
+    """Carrega na cesta apenas espécies com nome selecionado e volume > 0."""
     especies_validas = [
         e
         for e in st.session_state.fab_especies
@@ -1850,11 +1754,13 @@ def renderizar_ecossistema_fabrica_racao(
     vol_total_fabrica = sum(vol_por_especie.values())
     vol_por_especie["Total Fábrica de Ração"] = vol_total_fabrica
 
+    # ETAPA 0
     if st.session_state.fab_etapa == 0:
         resumo_vol = f"Total Fábrica: {fmt_br(float(vol_total_fabrica), 0)} ton/mês"
         renderizar_etapa_cadastro_cliente("Fabrica_Racao", resumo_vol, len(st.session_state.fab_cesta))
         renderizar_setas_etapa("fab_etapa", 0, 4)
 
+    # ETAPA 1
     elif st.session_state.fab_etapa == 1:
         st.header("Etapa 1: Produção")
         if st.session_state.cliente_nome:
@@ -1987,6 +1893,7 @@ def renderizar_ecossistema_fabrica_racao(
 
         renderizar_setas_etapa("fab_etapa", 1, 4)
 
+    # ETAPA 2
     elif st.session_state.fab_etapa == 2:
         st.header("Etapa 2: Produtos & Dosagens")
         if st.session_state.cliente_nome:
@@ -2186,6 +2093,7 @@ def renderizar_ecossistema_fabrica_racao(
 
         renderizar_setas_etapa("fab_etapa", 2, 4)
 
+    # ETAPA 3
     elif st.session_state.fab_etapa == 3:
         st.header("Etapa 3: Faturamento & Proposta (US$)")
         if st.session_state.cliente_nome:
@@ -2271,6 +2179,7 @@ def renderizar_ecossistema_fabrica_racao(
             )
 
             nome_pdf = f"{item['produto']} ({ativos_curto})" if ativos_curto else item["produto"]
+            obs_pdf_item = item.get("observacao", "").strip() or f"{item['especie']} - {item['ponto']}"
             linhas_proposta_pdf.append(
                 {
                     "produto_pdf": nome_pdf,
@@ -2278,7 +2187,7 @@ def renderizar_ecossistema_fabrica_racao(
                     "qtd_mensal": consumo_real_kg,
                     "preco_kg": preco_kg,
                     "custo_ton": custo_ton_tratada,
-                    "obs_pdf": item.get("observacao", "").strip() or item["matriz"],
+                    "obs_pdf": obs_pdf_item,
                 }
             )
 
@@ -2352,6 +2261,7 @@ def renderizar_ecossistema_ffo_provisorio(
             "Farinha de Sangue Suína": mp * (float(st.session_state.sui_rend_sangue) / 100.0),
         }
 
+    # ETAPA 0
     if st.session_state[etapa_key] == 0:
         resumo_vol = f"MP FFO: {fmt_br(mp, 1)} ton/mês"
         renderizar_etapa_cadastro_cliente(
@@ -2361,6 +2271,7 @@ def renderizar_ecossistema_ffo_provisorio(
         )
         renderizar_setas_etapa(etapa_key, 0, 4)
 
+    # ETAPA 1
     elif st.session_state[etapa_key] == 1:
         st.header("Etapa 1: Dimensionamento de Matéria-Prima e Subprodutos (Provisório)")
         col1, col2 = st.columns(2)
@@ -2450,6 +2361,7 @@ def renderizar_ecossistema_ffo_provisorio(
 
         renderizar_setas_etapa(etapa_key, 1, 4)
 
+    # ETAPA 2
     elif st.session_state[etapa_key] == 2:
         st.header("Etapa 2: Produtos & Dosagens")
         renderizar_catalogo_ft(
@@ -2581,6 +2493,7 @@ def renderizar_ecossistema_ffo_provisorio(
 
         renderizar_setas_etapa(etapa_key, 2, 4)
 
+    # ETAPA 3
     elif st.session_state[etapa_key] == 3:
         st.header("Etapa 3: Faturamento & Proposta (US$)")
         linhas_financeiro: List[Dict[str, Any]] = []
@@ -2736,33 +2649,48 @@ def autenticar_usuario() -> bool:
     return False
 
 
-def _resolver_ecossistema_atual() -> str:
-    """Resolve o destino de forma determinística entre query_params e session_state."""
-    try:
-        eco_url = str(st.query_params.get("eco", "") or "").strip()
-    except Exception:
-        eco_url = ""
-
-    if eco_url in ECOSSISTEMAS_VALIDOS:
-        st.session_state["ecossistema_ativo"] = eco_url
-        return eco_url
-
-    eco_state = str(st.session_state.get("ecossistema_ativo", "portal") or "portal").strip()
-    if eco_state in ECOSSISTEMAS_VALIDOS:
-        return eco_state
-
-    st.session_state["ecossistema_ativo"] = "portal"
-    return "portal"
-
+def renderizar_cabecalho_cfs() -> None:
+    """Exibe o cabeçalho padrão da CFS com o logo no topo de todas as páginas."""
+    col_esq, col_dir = st.columns([4.5, 1.5], vertical_alignment="center")
+    with col_esq:
+        st.markdown(
+            "<div style='background:linear-gradient(90deg,#FFF7E6 0%,#FFE6C2 100%);"
+            "border:1px solid #FFC067;border-left:6px solid #FF7E00;border-radius:10px;"
+            "padding:10px 16px;'>"
+            "<div style='font-size:0.92rem;font-weight:800;letter-spacing:0.05em;"
+            "color:#7C2D12;text-transform:uppercase;'>CFS • Camlin Fine Sciences</div>"
+            "<div style='font-size:0.82rem;font-weight:600;color:#B45309;'>"
+            "Ecossistemas &amp; Fichas Técnicas</div>"
+            "</div>",
+            unsafe_allow_html=True,
+        )
+    with col_dir:
+        if os.path.exists(LOGO_PATH):
+            try:
+                st.image(LOGO_PATH, width=165)
+            except Exception:
+                st.markdown(
+                    "<div style='text-align:right;font-weight:800;color:#FF7E00;'>CFS</div>",
+                    unsafe_allow_html=True,
+                )
+        else:
+            st.markdown(
+                "<div style='text-align:right;font-weight:800;color:#FF7E00;'>CFS</div>",
+                unsafe_allow_html=True,
+            )
+    st.markdown("<hr style='margin:6px 0 14px 0;border:0;border-top:2px solid #FFB343;'>", unsafe_allow_html=True)
 
 def main() -> None:
     aplicar_estilos_css()
-    renderizar_cabecalho_global()
 
     if not autenticar_usuario():
         return
 
-    destino = _resolver_ecossistema_atual()
+    if "ecossistema_ativo" not in st.session_state:
+        eco_url = str(st.query_params.get("eco", "portal") or "portal").strip()
+        st.session_state["ecossistema_ativo"] = (
+            eco_url if eco_url in ECOSSISTEMAS_VALIDOS else "portal"
+        )
 
     df_produtos, df_garantias, horario_sync, erro_carga = carregar_base_normalizada()
 
@@ -2789,17 +2717,22 @@ def main() -> None:
             "ffo_suinos": "🐷 FFO Suínos (Provisório)",
         }
         chaves_portal = list(opcoes_portal.keys())
-        idx_atual = chaves_portal.index(destino) if destino in chaves_portal else 0
+        atual = st.session_state.get("ecossistema_ativo", "portal")
+        idx_atual = chaves_portal.index(atual) if atual in chaves_portal else 0
 
         selecionado = st.radio(
             "Ir para:",
             options=chaves_portal,
             format_func=lambda k: opcoes_portal[k],
             index=idx_atual,
-            key=f"sidebar_portal_radio_{destino}",
+            key="sidebar_portal_radio",
         )
-        if selecionado != destino:
-            _set_ecossistema(selecionado)
+        if selecionado != atual:
+            st.session_state["ecossistema_ativo"] = selecionado
+            try:
+                st.query_params["eco"] = selecionado
+            except Exception:
+                pass
             st.rerun()
 
     if erro_carga or df_produtos.empty:
@@ -2811,20 +2744,16 @@ def main() -> None:
 
     inicializar_sessao(lista_produtos)
 
-    if destino != "portal":
+    if st.session_state.ecossistema_ativo != "portal":
         col_back, col_cli_badge = st.columns([1.4, 4.6])
         with col_back:
-            st.button(
-                "⬅️ Voltar ao Portal",
-                key="top_back_portal",
-                use_container_width=True,
-                on_click=_set_ecossistema,
-                args=("portal",),
-            )
+            if st.button("⬅️ Voltar ao Portal", key="top_back_portal", use_container_width=True):
+                navegar_para("portal")
         with col_cli_badge:
             if st.session_state.cliente_nome.strip():
                 st.caption(f"Cliente ativo na sessão: **{st.session_state.cliente_nome}**")
 
+    destino = st.session_state.ecossistema_ativo
     if destino == "portal":
         renderizar_portal_hub(df_produtos, df_garantias)
     elif destino == "consulta_ft":
