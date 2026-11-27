@@ -824,7 +824,6 @@ def inicializar_sessao(lista_produtos: List[str]) -> None:
 # =============================================================================
 def navegar_para(ecossistema: str) -> None:
     st.session_state["ecossistema_ativo"] = ecossistema
-    st.session_state["sidebar_portal_radio"] = ecossistema
     st.rerun()
 
 def mudar_etapa(chave_estado: str, nova_etapa: int) -> None:
@@ -1135,6 +1134,7 @@ def renderizar_portal_hub(df_produtos: pd.DataFrame, df_garantias: pd.DataFrame)
     st.markdown("Selecione o ecossistema operacional ou acesse a consulta rápida de Fichas Técnicas:")
     st.markdown("")
 
+    # Linha 1: Consulta de FTs -> Fábrica de Ração -> Avicultura
     col1, col2, col3 = st.columns(3)
 
     with col1:
@@ -1187,6 +1187,7 @@ def renderizar_portal_hub(df_produtos: pd.DataFrame, df_garantias: pd.DataFrame)
 
     st.markdown("")
 
+    # Linha 2: FFO Bovinos -> FFO Suínos
     col4, col5, _ = st.columns([1, 1, 1])
 
     with col4:
@@ -1220,7 +1221,6 @@ def renderizar_portal_hub(df_produtos: pd.DataFrame, df_garantias: pd.DataFrame)
         )
         if st.button("Abrir FFO Suínos ➡️", key="card_btn_sui", use_container_width=True):
             navegar_para("ffo_suinos")
-
 # =============================================================================
 # ECOSSISTEMA 1: AVICULTURA
 # =============================================================================
@@ -2658,13 +2658,8 @@ def main() -> None:
     if st.session_state.ecossistema_ativo != "portal":
         col_back, col_cli_badge = st.columns([1.4, 4.6])
         with col_back:
-            st.button(
-                "⬅️ Voltar ao Portal",
-                key="top_back_portal",
-                on_click=navegar_para,
-                args=("portal",),
-                use_container_width=True,
-            )
+            if st.button("⬅️ Voltar ao Portal", key="top_back_portal", use_container_width=True):
+                navegar_para("portal")
         with col_cli_badge:
             if st.session_state.cliente_nome.strip():
                 st.caption(f"Cliente ativo na sessão: **{st.session_state.cliente_nome}**")
