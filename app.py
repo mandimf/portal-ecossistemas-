@@ -77,6 +77,15 @@ PARES_DUPLA_DECLARACAO: List[Tuple[str, str]] = [
 
 SINERGISTAS = {"Ácido Cítrico", "Ácido Fosfórico", "EDTA"}
 
+ECOSSISTEMAS_VALIDOS = {
+    "portal",
+    "consulta_ft",
+    "fabrica_racao",
+    "avicultura",
+    "ffo_bovinos",
+    "ffo_suinos",
+}
+
 
 # =============================================================================
 # ESTILOS CSS (HUB DE CARDS E AJUSTES VISUAIS)
@@ -688,8 +697,6 @@ def gerar_pdf_proposta(
 def inicializar_sessao(lista_produtos: List[str]) -> None:
     prod_inicial = lista_produtos[0] if lista_produtos else ""
     defaults: Dict[str, Any] = {
-        "ecossistema_ativo": "portal",
-        # Dados compartilhados de Consultor, Cliente & Condições PDF
         "consultor_nome": "",
         "consultor_email": "",
         "consultor_telefone": "",
@@ -704,7 +711,6 @@ def inicializar_sessao(lista_produtos: List[str]) -> None:
         "validade_proposta": date.today() + timedelta(days=30),
         "pagamento": "30 dias",
         "obs_gerais_pdf": "",
-        # --- Avicultura ---
         "aves_etapa": 0,
         "tipo_gatilho": "Aves Abatidas",
         "aves_dia": 50000.0,
@@ -718,7 +724,6 @@ def inicializar_sessao(lista_produtos: List[str]) -> None:
         "rend_fps": 10.0,
         "rend_oleo": 12.67,
         "aves_next_id": 3,
-        # --- Fábrica de Ração Comercial (espécie e volume iniciam vazios) ---
         "fab_etapa": 0,
         "fab_misturadores": [
             {"id": 1, "capacidade_kg": 2000, "observacao": ""},
@@ -730,14 +735,12 @@ def inicializar_sessao(lista_produtos: List[str]) -> None:
         "fab_next_esp_id": 2,
         "fab_cesta": [],
         "fab_next_cesta_id": 1,
-        # --- FFO Bovinos (Base Provisória) ---
         "bov_etapa": 0,
         "bov_mp_ton": 4000.0,
         "bov_rend_farinha": 26.0,
         "bov_rend_sebo": 14.0,
         "bov_rend_sangue": 4.0,
         "bov_next_id": 3,
-        # --- FFO Suínos (Base Provisória) ---
         "sui_etapa": 0,
         "sui_mp_ton": 3000.0,
         "sui_rend_farinha": 24.0,
@@ -817,11 +820,17 @@ def inicializar_sessao(lista_produtos: List[str]) -> None:
 
 
 # =============================================================================
-# NAVEGAÇÃO (SEM CONFLITO DE WIDGET KEY)
+# NAVEGAÇÃO (SINCRONIZADA COM QUERY_PARAMS E SEM CONFLITO DE WIDGET KEY)
 # =============================================================================
 def navegar_para(ecossistema: str) -> None:
-    st.session_state["ecossistema_ativo"] = ecossistema
+    destino = ecossistema if ecossistema in ECOSSISTEMAS_VALIDOS else "portal"
+    st.session_state["ecossistema_ativo"] = destino
+    try:
+        st.query_params["eco"] = destino
+    except Exception:
+        pass
     st.rerun()
+
 
 def mudar_etapa(chave_estado: str, nova_etapa: int) -> None:
     st.session_state[chave_estado] = nova_etapa
@@ -2641,6 +2650,12 @@ def main() -> None:
     if not autenticar_usuario():
         return
 
+    if "ecossistema_ativo" not in st.session_state:
+        eco_url = str(st.query_params.get("eco", "portal") or "portal").strip()
+        st.session_state["ecossistema_ativo"] = (
+            eco_url if eco_url in ECOSSISTEMAS_VALIDOS else "portal"
+        )
+
     df_produtos, df_garantias, horario_sync, erro_carga = carregar_base_normalizada()
 
     with st.sidebar:
@@ -2677,7 +2692,11 @@ def main() -> None:
             key="sidebar_portal_radio",
         )
         if selecionado != atual:
-            st.session_state.ecossistema_ativo = selecionado
+            st.session_state["ecossistema_ativo"] = selecionado
+            try:
+                st.query_params["eco"] = selecionado
+            except Exception:
+                pass
             st.rerun()
 
     if erro_carga or df_produtos.empty:
