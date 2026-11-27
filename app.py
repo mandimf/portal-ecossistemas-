@@ -331,6 +331,22 @@ def parse_numero_br(texto: str, padrao: float = 0.0, minimo: float = 0.0) -> flo
         return max(padrao, minimo)
 
 
+def _formatar_ao_sair_numero(
+    txt_key: str,
+    casas: int,
+    minimo: float,
+    vazio_inicial: bool,
+    padrao_valor: float,
+) -> None:
+    atual_txt = str(st.session_state.get(txt_key, "") or "").strip()
+    if vazio_inicial and atual_txt == "":
+        st.session_state[txt_key] = ""
+        return
+    padrao_calc = 0.0 if vazio_inicial else float(padrao_valor)
+    val = parse_numero_br(atual_txt, padrao=padrao_calc, minimo=minimo)
+    st.session_state[txt_key] = fmt_br(val, casas)
+
+
 def input_numero_br(
     label: str,
     valor_atual: float,
@@ -346,7 +362,13 @@ def input_numero_br(
             st.session_state[txt_key] = ""
         else:
             st.session_state[txt_key] = fmt_br(float(valor_atual), casas)
-    digitado = st.text_input(label, key=txt_key, placeholder=placeholder)
+    digitado = st.text_input(
+        label,
+        key=txt_key,
+        placeholder=placeholder,
+        on_change=_formatar_ao_sair_numero,
+        args=(txt_key, casas, minimo, vazio_inicial, float(valor_atual)),
+    )
     return parse_numero_br(digitado, padrao=0.0 if vazio_inicial else float(valor_atual), minimo=minimo)
 
 
@@ -364,7 +386,13 @@ def input_inteiro_br(
             st.session_state[txt_key] = ""
         else:
             st.session_state[txt_key] = fmt_br(float(valor_atual), 0)
-    digitado = st.text_input(label, key=txt_key, placeholder=placeholder)
+    digitado = st.text_input(
+        label,
+        key=txt_key,
+        placeholder=placeholder,
+        on_change=_formatar_ao_sair_numero,
+        args=(txt_key, 0, float(minimo), vazio_inicial, float(valor_atual)),
+    )
     padrao_calc = 0.0 if vazio_inicial else float(valor_atual)
     val = int(round(parse_numero_br(digitado, padrao=padrao_calc, minimo=float(minimo))))
     return max(val, minimo)
@@ -912,31 +940,43 @@ def navegar_para(ecossistema: str) -> None:
     st.rerun()
 
 
-def mudar_etapa(chave_estado: str, nova_etapa: int) -> None:
-    st.session_state[chave_estado] = nova_etapa
-    st.rerun()
+def _ir_para_etapa(chave_estado: str, nova_etapa: int, etapas_lista: List[str], radio_key: str) -> None:
+    alvo = max(0, min(nova_etapa, len(etapas_lista) - 1))
+    st.session_state[chave_estado] = alvo
+    if 0 <= alvo < len(etapas_lista):
+        st.session_state[radio_key] = etapas_lista[alvo]
 
 
-def renderizar_setas_etapa(chave_estado: str, etapa_atual: int, total_etapas: int) -> None:
+def renderizar_setas_etapa(
+    chave_estado: str,
+    etapa_atual: int,
+    total_etapas: int,
+    etapas_lista: Optional[List[str]] = None,
+    radio_key: Optional[str] = None,
+) -> None:
     st.markdown("---")
+    etapas_ref = etapas_lista or [f"Etapa {i}" for i in range(total_etapas)]
+    r_key = radio_key or f"radio_{chave_estado}"
     c_ant, _, c_prox = st.columns([1.4, 3.2, 1.4])
     with c_ant:
         if etapa_atual > 0:
-            if st.button(
+            st.button(
                 "⬅️ Etapa Anterior",
                 key=f"btn_ant_{chave_estado}_{etapa_atual}",
                 use_container_width=True,
-            ):
-                mudar_etapa(chave_estado, etapa_atual - 1)
+                on_click=_ir_para_etapa,
+                args=(chave_estado, etapa_atual - 1, etapas_ref, r_key),
+            )
     with c_prox:
         if etapa_atual < total_etapas - 1:
-            if st.button(
+            st.button(
                 "Próxima Etapa ➡️",
                 key=f"btn_prox_{chave_estado}_{etapa_atual}",
                 type="primary",
                 use_container_width=True,
-            ):
-                mudar_etapa(chave_estado, etapa_atual + 1)
+                on_click=_ir_para_etapa,
+                args=(chave_estado, etapa_atual + 1, etapas_ref, r_key),
+            )
 
 
 # =============================================================================
@@ -1041,6 +1081,7 @@ def renderizar_catalogo_ft(
     prefixo_key: str,
     mostrar_limite_regulatorio: bool = True,
     expanded: bool = True,
+    ocultar_rev_data_ft: bool = False,
 ) -> None:
     with st.expander("🔍 Consultar Catálogo de FTs e Filtrar por Princípio Ativo", expanded=expanded):
         cats_presentes = df_produtos["categoria"].dropna().unique().tolist()
@@ -1097,7 +1138,9 @@ def renderizar_catalogo_ft(
         ]
         if mostrar_limite_regulatorio:
             colunas_exibicao.append("limite_regulatorio")
-        colunas_exibicao.extend(["composicao", "ft_revisao", "ft_data"])
+        colunas_exibicao.append("composicao")
+        if not ocultar_rev_data_ft:
+            colunas_exibicao.extend(["ft_revisao", "ft_data"])
 
         if df_ft_view.empty:
             st.warning("Nenhum produto encontrado com a combinação de filtros selecionada.")
@@ -1375,9 +1418,7 @@ def renderizar_ecossistema_avicultura(
         horizontal=True,
         key="radio_aves_etapa",
     )
-    if etapas.index(escolha) != etapa_idx:
-        st.session_state.aves_etapa = etapas.index(escolha)
-        st.rerun()
+    st.session_state.aves_etapa = etapas.index(escolha)
 
     st.markdown("---")
 
@@ -1387,7 +1428,7 @@ def renderizar_ecossistema_avicultura(
             f"MP FFO: {fmt_br(volumes['Matéria-Prima Bruta FFO'], 1)} t"
         )
         renderizar_etapa_cadastro_cliente("Avicultura", resumo_vol, len(st.session_state.aves_cesta))
-        renderizar_setas_etapa("aves_etapa", 0, 4)
+        renderizar_setas_etapa("aves_etapa", 0, 4, etapas, "radio_aves_etapa")
 
     elif st.session_state.aves_etapa == 1:
         st.header("Etapa 1: Cálculo de Produção de Ração & FFO")
@@ -1522,7 +1563,7 @@ def renderizar_ecossistema_avicultura(
         m4.metric("Farinha Penas (FPS)", f"{fmt_br(volumes['Farinha de Penas (FPS)'], 1)} ton")
         m5.metric("Óleo de Frango", f"{fmt_br(volumes['Óleo de Frango'], 1)} ton")
 
-        renderizar_setas_etapa("aves_etapa", 1, 4)
+        renderizar_setas_etapa("aves_etapa", 1, 4, etapas, "radio_aves_etapa")
 
     elif st.session_state.aves_etapa == 2:
         st.header("Etapa 2: Produtos & Dosagens")
@@ -1667,7 +1708,7 @@ def renderizar_ecossistema_avicultura(
         total_kg_geral = float(df_resumo["_consumo_num"].sum()) if not df_resumo.empty else 0.0
         st.success(f"📦 **Volume Físico Total Estimado na Conta:** {fmt_br(total_kg_geral, 2)} kg / mês")
 
-        renderizar_setas_etapa("aves_etapa", 2, 4)
+        renderizar_setas_etapa("aves_etapa", 2, 4, etapas, "radio_aves_etapa")
 
     elif st.session_state.aves_etapa == 3:
         st.header("Etapa 3: Faturamento & Proposta (US$)")
@@ -1772,7 +1813,7 @@ def renderizar_ecossistema_avicultura(
         r3.metric("Potencial Anualizado da Conta", f"US$ {fmt_br(tot_fat_mensal * 12.0, 2)}")
 
         renderizar_bloco_pdf("Avicultura", linhas_proposta_pdf)
-        renderizar_setas_etapa("aves_etapa", 3, 4)
+        renderizar_setas_etapa("aves_etapa", 3, 4, etapas, "radio_aves_etapa")
 
 
 # =============================================================================
@@ -1835,9 +1876,7 @@ def renderizar_ecossistema_fabrica_racao(
         horizontal=True,
         key="radio_fab_etapa",
     )
-    if etapas.index(escolha) != etapa_idx:
-        st.session_state.fab_etapa = etapas.index(escolha)
-        st.rerun()
+    st.session_state.fab_etapa = etapas.index(escolha)
 
     st.markdown("---")
 
@@ -1853,7 +1892,7 @@ def renderizar_ecossistema_fabrica_racao(
     if st.session_state.fab_etapa == 0:
         resumo_vol = f"Total Fábrica: {fmt_br(float(vol_total_fabrica), 0)} ton/mês"
         renderizar_etapa_cadastro_cliente("Fabrica_Racao", resumo_vol, len(st.session_state.fab_cesta))
-        renderizar_setas_etapa("fab_etapa", 0, 4)
+        renderizar_setas_etapa("fab_etapa", 0, 4, etapas, "radio_fab_etapa")
 
     elif st.session_state.fab_etapa == 1:
         st.header("Etapa 1: Produção")
@@ -1985,7 +2024,7 @@ def renderizar_ecossistema_fabrica_racao(
             for i, (nome_e, v_int) in enumerate(vol_por_especie.items()):
                 cols_m[i % len(cols_m)].metric(nome_e, f"{fmt_br(float(v_int), 0)} ton")
 
-        renderizar_setas_etapa("fab_etapa", 1, 4)
+        renderizar_setas_etapa("fab_etapa", 1, 4, etapas, "radio_fab_etapa")
 
     elif st.session_state.fab_etapa == 2:
         st.header("Etapa 2: Produtos & Dosagens")
@@ -2184,7 +2223,7 @@ def renderizar_ecossistema_fabrica_racao(
         total_kg_geral = float(df_resumo["_consumo_num"].sum()) if not df_resumo.empty else 0.0
         st.success(f"📦 **Volume Físico Total Estimado na Conta:** {fmt_br(total_kg_geral, 2)} kg / mês")
 
-        renderizar_setas_etapa("fab_etapa", 2, 4)
+        renderizar_setas_etapa("fab_etapa", 2, 4, etapas, "radio_fab_etapa")
 
     elif st.session_state.fab_etapa == 3:
         st.header("Etapa 3: Faturamento & Proposta (US$)")
@@ -2292,7 +2331,7 @@ def renderizar_ecossistema_fabrica_racao(
         r3.metric("Potencial Anualizado da Conta", f"US$ {fmt_br(tot_fat_mensal * 12.0, 2)}")
 
         renderizar_bloco_pdf("Fabrica_Racao", linhas_proposta_pdf)
-        renderizar_setas_etapa("fab_etapa", 3, 4)
+        renderizar_setas_etapa("fab_etapa", 3, 4, etapas, "radio_fab_etapa")
 
 
 # =============================================================================
@@ -2329,9 +2368,7 @@ def renderizar_ecossistema_ffo_provisorio(
         horizontal=True,
         key=f"radio_{prefixo}_etapa",
     )
-    if etapas.index(escolha) != etapa_idx:
-        st.session_state[etapa_key] = etapas.index(escolha)
-        st.rerun()
+    st.session_state[etapa_key] = etapas.index(escolha)
 
     st.markdown("---")
 
@@ -2359,7 +2396,7 @@ def renderizar_ecossistema_ffo_provisorio(
             resumo_vol,
             len(st.session_state[cesta_key]),
         )
-        renderizar_setas_etapa(etapa_key, 0, 4)
+        renderizar_setas_etapa(etapa_key, 0, 4, etapas, f"radio_{prefixo}_etapa")
 
     elif st.session_state[etapa_key] == 1:
         st.header("Etapa 1: Dimensionamento de Matéria-Prima e Subprodutos (Provisório)")
@@ -2448,7 +2485,7 @@ def renderizar_ecossistema_ffo_provisorio(
         for i, (nome_m, val_m) in enumerate(volumes.items()):
             cols_v[i].metric(nome_m, f"{fmt_br(val_m, 1)} ton")
 
-        renderizar_setas_etapa(etapa_key, 1, 4)
+        renderizar_setas_etapa(etapa_key, 1, 4, etapas, f"radio_{prefixo}_etapa")
 
     elif st.session_state[etapa_key] == 2:
         st.header("Etapa 2: Produtos & Dosagens")
@@ -2579,7 +2616,7 @@ def renderizar_ecossistema_ffo_provisorio(
         total_kg_geral = float(df_resumo["_consumo_num"].sum()) if not df_resumo.empty else 0.0
         st.success(f"📦 **Volume Físico Total Estimado na Conta:** {fmt_br(total_kg_geral, 2)} kg / mês")
 
-        renderizar_setas_etapa(etapa_key, 2, 4)
+        renderizar_setas_etapa(etapa_key, 2, 4, etapas, f"radio_{prefixo}_etapa")
 
     elif st.session_state[etapa_key] == 3:
         st.header("Etapa 3: Faturamento & Proposta (US$)")
@@ -2672,7 +2709,7 @@ def renderizar_ecossistema_ffo_provisorio(
         r3.metric("Potencial Anualizado da Conta", f"US$ {fmt_br(tot_fat_mensal * 12.0, 2)}")
 
         renderizar_bloco_pdf("FFO_Bovinos" if eh_bov else "FFO_Suinos", linhas_proposta_pdf)
-        renderizar_setas_etapa(etapa_key, 3, 4)
+        renderizar_setas_etapa(etapa_key, 3, 4, etapas, f"radio_{prefixo}_etapa")
 
 
 # =============================================================================
@@ -2686,6 +2723,7 @@ def renderizar_modulo_consulta_ft(df_produtos: pd.DataFrame, df_garantias: pd.Da
         prefixo_key="hub_ft",
         mostrar_limite_regulatorio=True,
         expanded=True,
+        ocultar_rev_data_ft=True,
     )
 
     st.markdown("---")
@@ -2700,16 +2738,16 @@ def renderizar_modulo_consulta_ft(df_produtos: pd.DataFrame, df_garantias: pd.Da
     with col_s2:
         dose_sim = input_numero_br(
             "Dosagem (kg/ton):",
-            0.500,
+            1.00,
             key="ft_sim_dose",
-            casas=3,
+            casas=2,
             minimo=0.0,
         )
     with col_s3:
         row_p = df_produtos[df_produtos["produto"] == prod_sel].iloc[0]
         entrega = calcular_entrega_ativos_kg_ton(str(row_p["id_produto"]), dose_sim, df_garantias)
         st.info(
-            f"**{prod_sel}** ({row_p['estado_fisico']} | {row_p['ft_revisao']})  \n"
+            f"**{prod_sel}** ({row_p['estado_fisico']})  \n"
             f"**Entrega:** {entrega['detalhe_texto']}"
         )
 
@@ -2755,9 +2793,37 @@ def _resolver_ecossistema_atual() -> str:
     return "portal"
 
 
+def renderizar_cabecalho_cfs() -> None:
+    """Exibe o cabeçalho padrão da CFS com o logo no topo de todas as páginas."""
+    col_esq, col_dir = st.columns([4.5, 1.5], vertical_alignment="center")
+    with col_esq:
+        st.markdown(
+            "<div class='cfs-top-header'>"
+            "<span class='cfs-top-brand'>CFS • Camlin Fine Sciences</span>"
+            "<span class='cfs-top-sub'>Ecossistemas &amp; Fichas Técnicas</span>"
+            "</div>",
+            unsafe_allow_html=True,
+        )
+    with col_dir:
+        if os.path.exists(LOGO_PATH):
+            try:
+                st.image(LOGO_PATH, width=165)
+            except Exception:
+                st.markdown(
+                    "<div style='text-align:right; font-weight:800; color:#FF7E00;'>CFS</div>",
+                    unsafe_allow_html=True,
+                )
+        else:
+            st.markdown(
+                "<div style='text-align:right; font-weight:800; color:#FF7E00;'>CFS</div>",
+                unsafe_allow_html=True,
+            )
+    st.markdown("<hr class='cfs-header-rule'>", unsafe_allow_html=True)
+
 def main() -> None:
     aplicar_estilos_css()
     renderizar_cabecalho_global()
+    renderizar_cabecalho_cfs()
 
     if not autenticar_usuario():
         return
