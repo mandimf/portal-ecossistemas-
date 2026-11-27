@@ -88,37 +88,71 @@ ECOSSISTEMAS_VALIDOS = {
 
 
 # =============================================================================
-# ESTILOS CSS (HUB DE CARDS E AJUSTES VISUAIS)
+# ESTILOS CSS (PALETA LARANJA, HUB DE CARDS E AJUSTES VISUAIS)
 # =============================================================================
 def aplicar_estilos_css() -> None:
     st.markdown(
         """
         <style>
+        /* Paleta Laranja:
+           Light Orange #FFD580 | Pastel Orange #FFC067 | Yellow-Orange #FFB343
+           Orange #FFA500 | Carrot Orange #ED9121 | Apricot #FFB27F
+           Cantaloupe #FFA95C | Bright Orange #FF7E00 | Tangerine #F28500 | Pumpkin #FF7518
+        */
+        .cfs-top-header {
+            background: linear-gradient(90deg, #FFF7E6 0%, #FFE6C2 100%);
+            border: 1px solid #FFC067;
+            border-left: 6px solid #FF7E00;
+            border-radius: 10px;
+            padding: 10px 16px;
+            margin-bottom: 6px;
+        }
+        .cfs-top-brand {
+            font-size: 0.92rem;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            color: #7C2D12;
+            text-transform: uppercase;
+            display: block;
+        }
+        .cfs-top-sub {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #B45309;
+            display: block;
+        }
+        .cfs-header-rule {
+            margin: 6px 0 14px 0;
+            border: 0;
+            border-top: 2px solid #FFB343;
+        }
         .portal-card {
-            background: linear-gradient(145deg, #ffffff 0%, #f4f7fb 100%);
-            border: 1px solid #d7e1ec;
-            border-top: 4px solid #004a99;
+            background: linear-gradient(155deg, #FFFFFF 0%, #FFF8EC 100%);
+            border: 1px solid #FFC067;
+            border-top: 4px solid #FF7E00;
             border-radius: 12px;
             padding: 18px 18px 14px 18px;
             min-height: 185px;
-            box-shadow: 0 2px 8px rgba(15, 35, 65, 0.06);
+            box-shadow: 0 3px 10px rgba(242, 133, 0, 0.10);
             margin-bottom: 10px;
         }
         .portal-card-stub {
-            border-top-color: #d97706;
+            border-top-color: #ED9121;
+            background: linear-gradient(155deg, #FFFFFF 0%, #FFF3E0 100%);
         }
         .portal-card-ft {
-            border-top-color: #0d9488;
+            border-top-color: #FF7518;
+            background: linear-gradient(155deg, #FFFFFF 0%, #FFF5EB 100%);
         }
         .portal-title {
             font-size: 1.15rem;
             font-weight: 700;
-            color: #0f2341;
+            color: #7C2D12;
             margin-bottom: 8px;
         }
         .portal-desc {
             font-size: 0.88rem;
-            color: #4b5563;
+            color: #4B5563;
             line-height: 1.45;
         }
         .obs-discreta {
@@ -129,10 +163,51 @@ def aplicar_estilos_css() -> None:
             margin-bottom: 10px;
             display: block;
         }
+        div.stButton > button[kind="primary"],
+        div.stDownloadButton > button[kind="primary"] {
+            background: linear-gradient(135deg, #FF7E00 0%, #FF7518 100%);
+            border: 1px solid #F28500;
+            color: #FFFFFF;
+            font-weight: 600;
+        }
+        div.stButton > button[kind="primary"]:hover,
+        div.stDownloadButton > button[kind="primary"]:hover {
+            background: linear-gradient(135deg, #F28500 0%, #ED9121 100%);
+            border: 1px solid #B45309;
+            color: #FFFFFF;
+        }
         </style>
         """,
         unsafe_allow_html=True,
     )
+
+
+def renderizar_cabecalho_global() -> None:
+    """Renderiza o cabeçalho com o logo da CFS (com fallback textual) no topo de todas as páginas."""
+    col_brand, col_logo = st.columns([4.5, 1.5], vertical_alignment="center")
+    with col_brand:
+        st.markdown(
+            "<div class='cfs-top-header'>"
+            "<span class='cfs-top-brand'>CFS • Camlin Fine Sciences</span>"
+            "<span class='cfs-top-sub'>Ecossistemas &amp; Fichas Técnicas</span>"
+            "</div>",
+            unsafe_allow_html=True,
+        )
+    with col_logo:
+        if os.path.exists(LOGO_PATH):
+            try:
+                st.image(LOGO_PATH, width=165)
+            except Exception:
+                st.markdown(
+                    "<div style='text-align:right; font-weight:800; color:#FF7E00;'>CFS</div>",
+                    unsafe_allow_html=True,
+                )
+        else:
+            st.markdown(
+                "<div style='text-align:right; font-weight:800; color:#FF7E00;'>CFS</div>",
+                unsafe_allow_html=True,
+            )
+    st.markdown("<hr class='cfs-header-rule'>", unsafe_allow_html=True)
 
 
 # =============================================================================
@@ -480,28 +555,13 @@ def calcular_balanco_massa_aves(
 
 class PropostaCFSPDF(FPDF):
     def footer(self) -> None:
-        self.set_y(-24)
+        self.set_y(-18)
         self.set_draw_color(210, 215, 220)
         self.line(15, self.get_y(), 195, self.get_y())
         self.ln(3)
-        y_base = self.get_y()
-
         self.set_font("Helvetica", "B", 8)
         self.set_text_color(100, 110, 120)
-        self.set_xy(15, y_base + 3)
-        self.cell(100, 5, "BRINGING SCIENCE TO EVERYDAY LIFE", ln=0)
-
-        if os.path.exists(LOGO_PATH):
-            try:
-                self.image(LOGO_PATH, x=155, y=y_base, w=40)
-                return
-            except Exception:
-                pass
-
-        self.set_xy(125, y_base + 1)
-        self.set_font("Helvetica", "B", 11)
-        self.set_text_color(0, 74, 153)
-        self.cell(70, 5, "CFS  Camlin Fine Sciences", align="R", ln=1)
+        self.cell(0, 5, "BRINGING SCIENCE TO EVERYDAY LIFE", align="C", ln=0)
 
 
 def gerar_pdf_proposta(
@@ -522,28 +582,44 @@ def gerar_pdf_proposta(
     linhas_proposta: List[Dict[str, Any]],
 ) -> bytes:
     pdf = PropostaCFSPDF(orientation="P", unit="mm", format="A4")
-    pdf.set_auto_page_break(auto=True, margin=28)
-    pdf.set_margins(15, 16, 15)
+    pdf.set_auto_page_break(auto=True, margin=24)
+    pdf.set_margins(15, 14, 15)
     pdf.add_page()
 
+    pdf.set_xy(15, 14)
     pdf.set_font("Helvetica", "B", 18)
-    pdf.set_text_color(15, 35, 65)
-    pdf.cell(120, 9, pdf_safe("Proposta Comercial"), ln=0)
+    pdf.set_text_color(124, 45, 18)
+    pdf.cell(115, 8, pdf_safe("Proposta Comercial"), ln=1)
 
-    pdf.set_font("Helvetica", "", 10)
+    pdf.set_x(15)
+    pdf.set_font("Helvetica", "", 9.5)
     pdf.set_text_color(90, 95, 105)
-    pdf.cell(60, 9, pdf_safe(f"Emissão: {datetime.now().strftime('%d/%m/%Y')}"), align="R", ln=1)
+    pdf.cell(115, 5, pdf_safe(f"Emissão: {datetime.now().strftime('%d/%m/%Y')}"), ln=0)
 
-    pdf.set_draw_color(0, 74, 153)
-    pdf.set_line_width(0.6)
-    pdf.line(15, pdf.get_y() + 1, 195, pdf.get_y() + 1)
-    pdf.ln(7)
+    logo_inserido = False
+    if os.path.exists(LOGO_PATH):
+        try:
+            pdf.image(LOGO_PATH, x=155, y=12, w=40)
+            logo_inserido = True
+        except Exception:
+            logo_inserido = False
+
+    if not logo_inserido:
+        pdf.set_xy(125, 15)
+        pdf.set_font("Helvetica", "B", 12)
+        pdf.set_text_color(242, 133, 0)
+        pdf.cell(70, 6, "CFS  Camlin Fine Sciences", align="R", ln=0)
+
+    pdf.set_draw_color(255, 126, 0)
+    pdf.set_line_width(0.7)
+    pdf.line(15, 31, 195, 31)
+    pdf.set_y(36)
 
     y_info = pdf.get_y()
 
     pdf.set_xy(15, y_info)
     pdf.set_font("Helvetica", "B", 8)
-    pdf.set_text_color(0, 74, 153)
+    pdf.set_text_color(242, 133, 0)
     pdf.cell(85, 5, "FORNECEDOR", ln=1)
     pdf.set_x(15)
     pdf.set_font("Helvetica", "B", 10)
@@ -558,7 +634,7 @@ def gerar_pdf_proposta(
 
     pdf.set_xy(105, y_info)
     pdf.set_font("Helvetica", "B", 8)
-    pdf.set_text_color(0, 74, 153)
+    pdf.set_text_color(242, 133, 0)
     pdf.cell(90, 5, "CLIENTE", ln=1)
     pdf.set_x(105)
     pdf.set_font("Helvetica", "B", 10)
@@ -601,7 +677,7 @@ def gerar_pdf_proposta(
         widths = [64, 32, 32, 52]
         aligns = ["L", "R", "R", "L"]
 
-    pdf.set_fill_color(15, 35, 65)
+    pdf.set_fill_color(242, 133, 0)
     pdf.set_text_color(255, 255, 255)
     pdf.set_font("Helvetica", "B", 8.5)
     for h, w, al in zip(headers, widths, aligns):
@@ -638,13 +714,13 @@ def gerar_pdf_proposta(
             max_lines = max(max_lines, len(linhas_calc))
         row_h = max(8.0, max_lines * line_h + 2.5)
 
-        if pdf.get_y() + row_h > 265:
+        if pdf.get_y() + row_h > 268:
             pdf.add_page()
 
         x_start = 15.0
         y_start = pdf.get_y()
         if idx_row % 2 == 1:
-            pdf.set_fill_color(246, 248, 251)
+            pdf.set_fill_color(255, 243, 224)
             pdf.rect(x_start, y_start, sum(widths), row_h, style="F")
 
         cur_x = x_start
@@ -659,7 +735,7 @@ def gerar_pdf_proposta(
     pdf.ln(8)
 
     pdf.set_font("Helvetica", "B", 9.5)
-    pdf.set_text_color(15, 35, 65)
+    pdf.set_text_color(124, 45, 18)
     pdf.cell(0, 6, pdf_safe("Condições Comerciais"), ln=1)
     pdf.ln(1)
 
@@ -2195,7 +2271,6 @@ def renderizar_ecossistema_fabrica_racao(
             )
 
             nome_pdf = f"{item['produto']} ({ativos_curto})" if ativos_curto else item["produto"]
-            obs_pdf_item = item.get("observacao", "").strip() or f"{item['especie']} - {item['ponto']}"
             linhas_proposta_pdf.append(
                 {
                     "produto_pdf": nome_pdf,
@@ -2203,7 +2278,7 @@ def renderizar_ecossistema_fabrica_racao(
                     "qtd_mensal": consumo_real_kg,
                     "preco_kg": preco_kg,
                     "custo_ton": custo_ton_tratada,
-                    "obs_pdf": obs_pdf_item,
+                    "obs_pdf": item.get("observacao", "").strip() or item["matriz"],
                 }
             )
 
@@ -2682,6 +2757,7 @@ def _resolver_ecossistema_atual() -> str:
 
 def main() -> None:
     aplicar_estilos_css()
+    renderizar_cabecalho_global()
 
     if not autenticar_usuario():
         return
