@@ -2317,9 +2317,20 @@ def renderizar_ecossistema_fabrica_racao(
                     "qtd_mensal": consumo_real_kg,
                     "preco_kg": preco_kg,
                     "custo_ton": custo_ton_tratada,
-                    "obs_pdf": item.get("observacao", "").strip() or item["matriz"],
-                }
-            )
+                    "obs_pdf_item = (
+    item.get("observacao", "").strip()
+    or f"{item.get('especie', '')} - {item.get('ponto', '')}".strip(" -")
+)
+linhas_proposta_pdf.append(
+    {
+        "produto_pdf": nome_pdf,
+        "dosagem": dosagem,
+        "qtd_mensal": consumo_real_kg,
+        "preco_kg": preco_kg,
+        "custo_ton": custo_ton_tratada,
+        "obs_pdf": obs_pdf_item,
+    }
+)
 
         df_fin = pd.DataFrame(linhas_financeiro)
         st.subheader("💼 Resumo Executivo da Conta (US$)")
