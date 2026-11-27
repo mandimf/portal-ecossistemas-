@@ -820,7 +820,7 @@ def inicializar_sessao(lista_produtos: List[str]) -> None:
 
 
 # =============================================================================
-# NAVEGAÇÃO (SINCRONIZADA COM QUERY_PARAMS E SEM CONFLITO DE WIDGET KEY)
+# NAVEGAÇÃO (CALLBACK + QUERY_PARAMS SEM RERUN DUPLICADO)
 # =============================================================================
 def _set_ecossistema(ecossistema: str) -> None:
     destino = ecossistema if ecossistema in ECOSSISTEMAS_VALIDOS else "portal"
@@ -829,6 +829,11 @@ def _set_ecossistema(ecossistema: str) -> None:
         st.query_params["eco"] = destino
     except Exception:
         pass
+
+
+def navegar_para(ecossistema: str) -> None:
+    _set_ecossistema(ecossistema)
+    st.rerun()
 
 
 def mudar_etapa(chave_estado: str, nova_etapa: int) -> None:
@@ -1140,7 +1145,6 @@ def renderizar_portal_hub(df_produtos: pd.DataFrame, df_garantias: pd.DataFrame)
     st.markdown("Selecione o ecossistema operacional ou acesse a consulta rápida de Fichas Técnicas:")
     st.markdown("")
 
-    # Linha 1: Consulta de FTs -> Fábrica de Ração -> Avicultura
     col1, col2, col3 = st.columns(3)
 
     with col1:
@@ -1157,13 +1161,13 @@ def renderizar_portal_hub(df_produtos: pd.DataFrame, df_garantias: pd.DataFrame)
             unsafe_allow_html=True,
         )
         st.button(
-    "Consultar FTs ➡️",
-    key="card_btn_ft",
-    type="primary",
-    use_container_width=True,
-    on_click=_set_ecossistema,
-    args=("consulta_ft",),
-)
+            "Consultar FTs ➡️",
+            key="card_btn_ft",
+            type="primary",
+            use_container_width=True,
+            on_click=_set_ecossistema,
+            args=("consulta_ft",),
+        )
 
     with col2:
         st.markdown(
@@ -1178,8 +1182,14 @@ def renderizar_portal_hub(df_produtos: pd.DataFrame, df_garantias: pd.DataFrame)
             """,
             unsafe_allow_html=True,
         )
-        if st.button("Abrir Fábrica de Ração ➡️", key="card_btn_fab", type="primary", use_container_width=True):
-            navegar_para("fabrica_racao")
+        st.button(
+            "Abrir Fábrica de Ração ➡️",
+            key="card_btn_fab",
+            type="primary",
+            use_container_width=True,
+            on_click=_set_ecossistema,
+            args=("fabrica_racao",),
+        )
 
     with col3:
         st.markdown(
@@ -1194,12 +1204,17 @@ def renderizar_portal_hub(df_produtos: pd.DataFrame, df_garantias: pd.DataFrame)
             """,
             unsafe_allow_html=True,
         )
-        if st.button("Abrir Avicultura ➡️", key="card_btn_aves", type="primary", use_container_width=True):
-            navegar_para("avicultura")
+        st.button(
+            "Abrir Avicultura ➡️",
+            key="card_btn_aves",
+            type="primary",
+            use_container_width=True,
+            on_click=_set_ecossistema,
+            args=("avicultura",),
+        )
 
     st.markdown("")
 
-    # Linha 2: FFO Bovinos -> FFO Suínos
     col4, col5, _ = st.columns([1, 1, 1])
 
     with col4:
@@ -1215,8 +1230,13 @@ def renderizar_portal_hub(df_produtos: pd.DataFrame, df_garantias: pd.DataFrame)
             """,
             unsafe_allow_html=True,
         )
-        if st.button("Abrir FFO Bovinos ➡️", key="card_btn_bov", use_container_width=True):
-            navegar_para("ffo_bovinos")
+        st.button(
+            "Abrir FFO Bovinos ➡️",
+            key="card_btn_bov",
+            use_container_width=True,
+            on_click=_set_ecossistema,
+            args=("ffo_bovinos",),
+        )
 
     with col5:
         st.markdown(
@@ -1231,8 +1251,13 @@ def renderizar_portal_hub(df_produtos: pd.DataFrame, df_garantias: pd.DataFrame)
             """,
             unsafe_allow_html=True,
         )
-        if st.button("Abrir FFO Suínos ➡️", key="card_btn_sui", use_container_width=True):
-            navegar_para("ffo_suinos")
+        st.button(
+            "Abrir FFO Suínos ➡️",
+            key="card_btn_sui",
+            use_container_width=True,
+            on_click=_set_ecossistema,
+            args=("ffo_suinos",),
+        )
 
 
 # =============================================================================
@@ -1280,7 +1305,6 @@ def renderizar_ecossistema_avicultura(
 
     st.markdown("---")
 
-    # ETAPA 0
     if st.session_state.aves_etapa == 0:
         resumo_vol = (
             f"Ração: {fmt_br(volumes['Fábrica de Ração'], 1)} t | "
@@ -1289,7 +1313,6 @@ def renderizar_ecossistema_avicultura(
         renderizar_etapa_cadastro_cliente("Avicultura", resumo_vol, len(st.session_state.aves_cesta))
         renderizar_setas_etapa("aves_etapa", 0, 4)
 
-    # ETAPA 1
     elif st.session_state.aves_etapa == 1:
         st.header("Etapa 1: Cálculo de Produção de Ração & FFO")
         if st.session_state.cliente_nome:
@@ -1425,7 +1448,6 @@ def renderizar_ecossistema_avicultura(
 
         renderizar_setas_etapa("aves_etapa", 1, 4)
 
-    # ETAPA 2
     elif st.session_state.aves_etapa == 2:
         st.header("Etapa 2: Produtos & Dosagens")
         if st.session_state.cliente_nome:
@@ -1571,7 +1593,6 @@ def renderizar_ecossistema_avicultura(
 
         renderizar_setas_etapa("aves_etapa", 2, 4)
 
-    # ETAPA 3
     elif st.session_state.aves_etapa == 3:
         st.header("Etapa 3: Faturamento & Proposta (US$)")
         if st.session_state.cliente_nome:
@@ -1682,7 +1703,6 @@ def renderizar_ecossistema_avicultura(
 # ECOSSISTEMA 2: FÁBRICA DE RAÇÃO COMERCIAL
 # =============================================================================
 def sincronizar_especies_cesta_fabrica(lista_produtos: List[str]) -> None:
-    """Carrega na cesta apenas espécies com nome selecionado e volume > 0."""
     especies_validas = [
         e
         for e in st.session_state.fab_especies
@@ -1754,13 +1774,11 @@ def renderizar_ecossistema_fabrica_racao(
     vol_total_fabrica = sum(vol_por_especie.values())
     vol_por_especie["Total Fábrica de Ração"] = vol_total_fabrica
 
-    # ETAPA 0
     if st.session_state.fab_etapa == 0:
         resumo_vol = f"Total Fábrica: {fmt_br(float(vol_total_fabrica), 0)} ton/mês"
         renderizar_etapa_cadastro_cliente("Fabrica_Racao", resumo_vol, len(st.session_state.fab_cesta))
         renderizar_setas_etapa("fab_etapa", 0, 4)
 
-    # ETAPA 1
     elif st.session_state.fab_etapa == 1:
         st.header("Etapa 1: Produção")
         if st.session_state.cliente_nome:
@@ -1893,7 +1911,6 @@ def renderizar_ecossistema_fabrica_racao(
 
         renderizar_setas_etapa("fab_etapa", 1, 4)
 
-    # ETAPA 2
     elif st.session_state.fab_etapa == 2:
         st.header("Etapa 2: Produtos & Dosagens")
         if st.session_state.cliente_nome:
@@ -2093,7 +2110,6 @@ def renderizar_ecossistema_fabrica_racao(
 
         renderizar_setas_etapa("fab_etapa", 2, 4)
 
-    # ETAPA 3
     elif st.session_state.fab_etapa == 3:
         st.header("Etapa 3: Faturamento & Proposta (US$)")
         if st.session_state.cliente_nome:
@@ -2261,7 +2277,6 @@ def renderizar_ecossistema_ffo_provisorio(
             "Farinha de Sangue Suína": mp * (float(st.session_state.sui_rend_sangue) / 100.0),
         }
 
-    # ETAPA 0
     if st.session_state[etapa_key] == 0:
         resumo_vol = f"MP FFO: {fmt_br(mp, 1)} ton/mês"
         renderizar_etapa_cadastro_cliente(
@@ -2271,7 +2286,6 @@ def renderizar_ecossistema_ffo_provisorio(
         )
         renderizar_setas_etapa(etapa_key, 0, 4)
 
-    # ETAPA 1
     elif st.session_state[etapa_key] == 1:
         st.header("Etapa 1: Dimensionamento de Matéria-Prima e Subprodutos (Provisório)")
         col1, col2 = st.columns(2)
@@ -2361,7 +2375,6 @@ def renderizar_ecossistema_ffo_provisorio(
 
         renderizar_setas_etapa(etapa_key, 1, 4)
 
-    # ETAPA 2
     elif st.session_state[etapa_key] == 2:
         st.header("Etapa 2: Produtos & Dosagens")
         renderizar_catalogo_ft(
@@ -2493,7 +2506,6 @@ def renderizar_ecossistema_ffo_provisorio(
 
         renderizar_setas_etapa(etapa_key, 2, 4)
 
-    # ETAPA 3
     elif st.session_state[etapa_key] == 3:
         st.header("Etapa 3: Faturamento & Proposta (US$)")
         linhas_financeiro: List[Dict[str, Any]] = []
@@ -2649,17 +2661,32 @@ def autenticar_usuario() -> bool:
     return False
 
 
+def _resolver_ecossistema_atual() -> str:
+    """Resolve o destino de forma determinística entre query_params e session_state."""
+    try:
+        eco_url = str(st.query_params.get("eco", "") or "").strip()
+    except Exception:
+        eco_url = ""
+
+    if eco_url in ECOSSISTEMAS_VALIDOS:
+        st.session_state["ecossistema_ativo"] = eco_url
+        return eco_url
+
+    eco_state = str(st.session_state.get("ecossistema_ativo", "portal") or "portal").strip()
+    if eco_state in ECOSSISTEMAS_VALIDOS:
+        return eco_state
+
+    st.session_state["ecossistema_ativo"] = "portal"
+    return "portal"
+
+
 def main() -> None:
     aplicar_estilos_css()
 
     if not autenticar_usuario():
         return
 
-    if "ecossistema_ativo" not in st.session_state:
-        eco_url = str(st.query_params.get("eco", "portal") or "portal").strip()
-        st.session_state["ecossistema_ativo"] = (
-            eco_url if eco_url in ECOSSISTEMAS_VALIDOS else "portal"
-        )
+    destino = _resolver_ecossistema_atual()
 
     df_produtos, df_garantias, horario_sync, erro_carga = carregar_base_normalizada()
 
@@ -2686,22 +2713,17 @@ def main() -> None:
             "ffo_suinos": "🐷 FFO Suínos (Provisório)",
         }
         chaves_portal = list(opcoes_portal.keys())
-        atual = st.session_state.get("ecossistema_ativo", "portal")
-        idx_atual = chaves_portal.index(atual) if atual in chaves_portal else 0
+        idx_atual = chaves_portal.index(destino) if destino in chaves_portal else 0
 
         selecionado = st.radio(
             "Ir para:",
             options=chaves_portal,
             format_func=lambda k: opcoes_portal[k],
             index=idx_atual,
-            key="sidebar_portal_radio",
+            key=f"sidebar_portal_radio_{destino}",
         )
-        if selecionado != atual:
-            st.session_state["ecossistema_ativo"] = selecionado
-            try:
-                st.query_params["eco"] = selecionado
-            except Exception:
-                pass
+        if selecionado != destino:
+            _set_ecossistema(selecionado)
             st.rerun()
 
     if erro_carga or df_produtos.empty:
@@ -2713,16 +2735,20 @@ def main() -> None:
 
     inicializar_sessao(lista_produtos)
 
-    if st.session_state.ecossistema_ativo != "portal":
+    if destino != "portal":
         col_back, col_cli_badge = st.columns([1.4, 4.6])
         with col_back:
-            if st.button("⬅️ Voltar ao Portal", key="top_back_portal", use_container_width=True):
-                navegar_para("portal")
+            st.button(
+                "⬅️ Voltar ao Portal",
+                key="top_back_portal",
+                use_container_width=True,
+                on_click=_set_ecossistema,
+                args=("portal",),
+            )
         with col_cli_badge:
             if st.session_state.cliente_nome.strip():
                 st.caption(f"Cliente ativo na sessão: **{st.session_state.cliente_nome}**")
 
-    destino = st.session_state.ecossistema_ativo
     if destino == "portal":
         renderizar_portal_hub(df_produtos, df_garantias)
     elif destino == "consulta_ft":
