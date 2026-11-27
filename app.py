@@ -823,8 +823,9 @@ def inicializar_sessao(lista_produtos: List[str]) -> None:
 # COMPONENTES REUTILIZÁVEIS (NAVEGAÇÃO, CADASTRO CLIENTE, CONSULTA FT, PDF)
 # =============================================================================
 def navegar_para(ecossistema: str) -> None:
-    st.session_state.ecossistema_ativo = ecossistema
-
+    st.session_state["ecossistema_ativo"] = ecossistema
+    st.session_state["sidebar_portal_radio"] = ecossistema
+    st.rerun()
 
 def mudar_etapa(chave_estado: str, nova_etapa: int) -> None:
     st.session_state[chave_estado] = nova_etapa
@@ -1134,7 +1135,6 @@ def renderizar_portal_hub(df_produtos: pd.DataFrame, df_garantias: pd.DataFrame)
     st.markdown("Selecione o ecossistema operacional ou acesse a consulta rápida de Fichas Técnicas:")
     st.markdown("")
 
-    # Linha 1: Consulta de FTs -> Fábrica de Ração -> Avicultura
     col1, col2, col3 = st.columns(3)
 
     with col1:
@@ -1150,14 +1150,8 @@ def renderizar_portal_hub(df_produtos: pd.DataFrame, df_garantias: pd.DataFrame)
             """,
             unsafe_allow_html=True,
         )
-        st.button(
-            "Consultar FTs ➡️",
-            key="card_btn_ft",
-            on_click=navegar_para,
-            args=("consulta_ft",),
-            type="primary",
-            use_container_width=True,
-        )
+        if st.button("Consultar FTs ➡️", key="card_btn_ft", type="primary", use_container_width=True):
+            navegar_para("consulta_ft")
 
     with col2:
         st.markdown(
@@ -1172,14 +1166,8 @@ def renderizar_portal_hub(df_produtos: pd.DataFrame, df_garantias: pd.DataFrame)
             """,
             unsafe_allow_html=True,
         )
-        st.button(
-            "Abrir Fábrica de Ração ➡️",
-            key="card_btn_fab",
-            on_click=navegar_para,
-            args=("fabrica_racao",),
-            type="primary",
-            use_container_width=True,
-        )
+        if st.button("Abrir Fábrica de Ração ➡️", key="card_btn_fab", type="primary", use_container_width=True):
+            navegar_para("fabrica_racao")
 
     with col3:
         st.markdown(
@@ -1194,18 +1182,11 @@ def renderizar_portal_hub(df_produtos: pd.DataFrame, df_garantias: pd.DataFrame)
             """,
             unsafe_allow_html=True,
         )
-        st.button(
-            "Abrir Avicultura ➡️",
-            key="card_btn_aves",
-            on_click=navegar_para,
-            args=("avicultura",),
-            type="primary",
-            use_container_width=True,
-        )
+        if st.button("Abrir Avicultura ➡️", key="card_btn_aves", type="primary", use_container_width=True):
+            navegar_para("avicultura")
 
     st.markdown("")
 
-    # Linha 2: FFO Bovinos -> FFO Suínos
     col4, col5, _ = st.columns([1, 1, 1])
 
     with col4:
@@ -1221,13 +1202,8 @@ def renderizar_portal_hub(df_produtos: pd.DataFrame, df_garantias: pd.DataFrame)
             """,
             unsafe_allow_html=True,
         )
-        st.button(
-            "Abrir FFO Bovinos ➡️",
-            key="card_btn_bov",
-            on_click=navegar_para,
-            args=("ffo_bovinos",),
-            use_container_width=True,
-        )
+        if st.button("Abrir FFO Bovinos ➡️", key="card_btn_bov", use_container_width=True):
+            navegar_para("ffo_bovinos")
 
     with col5:
         st.markdown(
@@ -1242,14 +1218,8 @@ def renderizar_portal_hub(df_produtos: pd.DataFrame, df_garantias: pd.DataFrame)
             """,
             unsafe_allow_html=True,
         )
-        st.button(
-            "Abrir FFO Suínos ➡️",
-            key="card_btn_sui",
-            on_click=navegar_para,
-            args=("ffo_suinos",),
-            use_container_width=True,
-        )
-
+        if st.button("Abrir FFO Suínos ➡️", key="card_btn_sui", use_container_width=True):
+            navegar_para("ffo_suinos")
 
 # =============================================================================
 # ECOSSISTEMA 1: AVICULTURA
