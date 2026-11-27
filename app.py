@@ -821,6 +821,7 @@ def inicializar_sessao(lista_produtos: List[str]) -> None:
 # =============================================================================
 def navegar_para(ecossistema: str) -> None:
     st.session_state["ecossistema_ativo"] = ecossistema
+    st.query_params["eco"] = ecossistema
     st.rerun()
 
 def mudar_etapa(chave_estado: str, nova_etapa: int) -> None:
@@ -1127,98 +1128,97 @@ def renderizar_bloco_pdf(
 # =============================================================================
 # TELA INICIAL: PORTAL DE ECOSSISTEMAS (HUB CENTRAL)
 # =============================================================================
-def renderizar_portal_hub(df_produtos: pd.DataFrame, df_garantias: pd.DataFrame) -> None:
-    st.title("🌐 Portal Comercial & Técnico CFS")
-    st.markdown("Selecione o ecossistema operacional ou acesse a consulta rápida de Fichas Técnicas:")
-    st.markdown("")
+def navegar_para(ecossistema: str) -> None:
+    st.session_state["ecossistema_ativo"] = ecossistema
+    try:
+        st.query_params["eco"] = ecossistema
+    except Exception:
+        pass
+    st.rerun()
 
-    # Linha 1: Consulta de FTs -> Fábrica de Ração -> Avicultura
-    col1, col2, col3 = st.columns(3)
 
-    with col1:
-        st.markdown(
-            f"""
-            <div class="portal-card portal-card-ft">
-                <div class="portal-title">📄 Consulta de FTs</div>
-                <div class="portal-desc">
-                    Consulta rápida e independente de Fichas Técnicas por linha, estado físico
-                    e match exato de princípios ativos ({len(df_produtos)} produtos | {len(df_garantias)} garantias).
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
+def main() -> None:
+    aplicar_estilos_css()
+
+    if not autenticar_usuario():
+        return
+
+    if "ecossistema_ativo" not in st.session_state:
+        eco_url = st.query_params.get("eco", "portal")
+        st.session_state["ecossistema_ativo"] = eco_url if eco_url else "portal"
+
+    df_produtos, df_garantias, horario_sync, erro_carga = carregar_base_normalizada()
+
+    with st.sidebar:
+        if erro_carga:
+            st.error("Falha na sincronização")
+        else:
+            st.success(f"Base conectada: {len(df_produtos)} produtos | {len(df_garantias)} garantias")
+            st.caption(f"Última sincronização: {horario_sync}")
+
+        if st.button("🔄 Atualizar Base", use_container_width=True):
+            carregar_base_normalizada.clear()
+            st.rerun()
+
+        st.markdown("---")
+        st.header("🌐 Portal de Ecossistemas")
+
+        opcoes_portal = {
+            "portal": "🏠 Início (Todos os Ecossistemas)",
+            "consulta_ft": "📄 Consulta de FTs",
+            "fabrica_racao": "🏭 Fábrica de Ração Comercial",
+            "avicultura": "🐔 Avicultura",
+            "ffo_bovinos": "🐂 FFO Bovinos (Provisório)",
+            "ffo_suinos": "🐷 FFO Suínos (Provisório)",
+        }
+        chaves_portal = list(opcoes_portal.keys())
+        atual = st.session_state.get("ecossistema_ativo", "portal")
+        idx_atual = chaves_portal.index(atual) if atual in chaves_portal else 0
+
+        selecionado = st.radio(
+            "Ir para:",
+            options=chaves_portal,
+            format_func=lambda k: opcoes_portal[k],
+            index=idx_atual,
+            key="sidebar_portal_radio",
         )
-        if st.button("Consultar FTs ➡️", key="card_btn_ft", type="primary", use_container_width=True):
-            navegar_para("consulta_ft")
+        if selecionado != atual:
+            st.session_state.ecossistema_ativo = selecionado
+            try:
+                st.query_params["eco"] = selecionado
+            except Exception:
+                pass
+            st.rerun()
 
-    with col2:
-        st.markdown(
-            """
-            <div class="portal-card">
-                <div class="portal-title">🏭 Fábrica de Ração Comercial</div>
-                <div class="portal-desc">
-                    Cadastro dinâmico de misturadores, volumes por espécie (Ruminantes, Aves,
-                    Suínos, Pet, Aqua, Outros), pontos críticos da planta, Share (%) e PDF.
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        if st.button("Abrir Fábrica de Ração ➡️", key="card_btn_fab", type="primary", use_container_width=True):
-            navegar_para("fabrica_racao")
+    if erro_carga or df_produtos.empty:
+        st.error(erro_carga or "A base de dados retornou vazia.")
+        return
 
-    with col3:
-        st.markdown(
-            """
-            <div class="portal-card">
-                <div class="portal-title">🐔 Avicultura</div>
-                <div class="portal-desc">
-                    Balanço de massa completo da fábrica de ração ao abatedouro e graxaria
-                    (FV, FPS e Óleo de Frango), cesta em kg/ton, ppm, Share (%) e proposta PDF.
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        if st.button("Abrir Avicultura ➡️", key="card_btn_aves", type="primary", use_container_width=True):
-            navegar_para("avicultura")
+    lista_produtos = df_produtos["produto"].tolist()
+    mapa_produtos = df_produtos.set_index("produto").to_dict(orient="index")
 
-    st.markdown("")
+    inicializar_sessao(lista_produtos)
 
-    # Linha 2: FFO Bovinos -> FFO Suínos
-    col4, col5, _ = st.columns([1, 1, 1])
+    if st.session_state.ecossistema_ativo != "portal":
+        col_back, col_cli_badge = st.columns([1.4, 4.6])
+        with col_back:
+            if st.button("⬅️ Voltar ao Portal", key="top_back_portal", use_container_width=True):
+                navegar_para("portal")
+        with col_cli_badge:
+            if st.session_state.cliente_nome.strip():
+                st.caption(f"Cliente ativo na sessão: **{st.session_state.cliente_nome}**")
 
-    with col4:
-        st.markdown(
-            """
-            <div class="portal-card portal-card-stub">
-                <div class="portal-title">🐂 FFO Bovinos</div>
-                <div class="portal-desc">
-                    Dimensionamento de matéria-prima bovina e rendimentos de subprodutos
-                    (Farinha de Carne e Ossos, Sebo Bovino), dosagem em kg/ton, ppm e proposta PDF.
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        if st.button("Abrir FFO Bovinos ➡️", key="card_btn_bov", use_container_width=True):
-            navegar_para("ffo_bovinos")
-
-    with col5:
-        st.markdown(
-            """
-            <div class="portal-card portal-card-stub">
-                <div class="portal-title">🐷 FFO Suínos</div>
-                <div class="portal-desc">
-                    Dimensionamento de matéria-prima suína e rendimentos de farinha e gordura
-                    suína, montagem de cesta em kg/ton, entrega em ppm e proposta PDF.
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        if st.button("Abrir FFO Suínos ➡️", key="card_btn_sui", use_container_width=True):
-            navegar_para("ffo_suinos")
+    destino = st.session_state.ecossistema_ativo
+    if destino == "portal":
+        renderizar_portal_hub(df_produtos, df_garantias)
+    elif destino == "consulta_ft":
+        renderizar_modulo_consulta_ft(df_produtos, df_garantias)
+    elif destino == "fabrica_racao":
+        renderizar_ecossistema_fabrica_racao(df_produtos, df_garantias, lista_produtos, mapa_produtos)
+    elif destino == "avicultura":
+        renderizar_ecossistema_avicultura(df_produtos, df_garantias, lista_produtos, mapa_produtos)
+    elif destino in ("ffo_bovinos", "ffo_suinos"):
+        renderizar_ecossistema_ffo_provisorio(destino, df_produtos, df_garantias, lista_produtos, mapa_produtos)
 
 
 # =============================================================================
