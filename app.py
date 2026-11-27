@@ -1156,8 +1156,14 @@ def renderizar_portal_hub(df_produtos: pd.DataFrame, df_garantias: pd.DataFrame)
             """,
             unsafe_allow_html=True,
         )
-        if st.button("Consultar FTs ➡️", key="card_btn_ft", type="primary", use_container_width=True):
-            navegar_para("consulta_ft")
+        st.button(
+    "Consultar FTs ➡️",
+    key="card_btn_ft",
+    type="primary",
+    use_container_width=True,
+    on_click=_set_ecossistema,
+    args=("consulta_ft",),
+)
 
     with col2:
         st.markdown(
