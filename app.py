@@ -822,14 +822,13 @@ def inicializar_sessao(lista_produtos: List[str]) -> None:
 # =============================================================================
 # NAVEGAÇÃO (SINCRONIZADA COM QUERY_PARAMS E SEM CONFLITO DE WIDGET KEY)
 # =============================================================================
-def navegar_para(ecossistema: str) -> None:
+def _set_ecossistema(ecossistema: str) -> None:
     destino = ecossistema if ecossistema in ECOSSISTEMAS_VALIDOS else "portal"
     st.session_state["ecossistema_ativo"] = destino
     try:
         st.query_params["eco"] = destino
     except Exception:
         pass
-    st.rerun()
 
 
 def mudar_etapa(chave_estado: str, nova_etapa: int) -> None:
