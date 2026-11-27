@@ -2823,7 +2823,7 @@ def renderizar_cabecalho_cfs() -> None:
 def main() -> None:
     aplicar_estilos_css()
     renderizar_cabecalho_global()
-    renderizar_cabecalho_cfs()
+    
 
     if not autenticar_usuario():
         return
