@@ -223,7 +223,7 @@ def carregar_base_normalizada() -> Tuple[pd.DataFrame, pd.DataFrame, str, Option
 
 
 # =============================================================================
-# FORMATAÇÃO BRASILEIRA & INPUTS SEM +/-
+# FORMATAÇÃO BRASILEIRA & INPUTS SEM +/- (COM SALVAMENTO IMEDIATO)
 # =============================================================================
 def fmt_br(valor: float, casas: int = 2) -> str:
     texto = f"{valor:,.{casas}f}"
@@ -253,12 +253,17 @@ def input_numero_br(
     key: str,
     casas: int = 2,
     minimo: float = 0.0,
+    placeholder: str = "",
+    vazio_inicial: bool = False,
 ) -> float:
     txt_key = f"_txt_{key}"
     if txt_key not in st.session_state:
-        st.session_state[txt_key] = fmt_br(float(valor_atual), casas)
-    digitado = st.text_input(label, key=txt_key)
-    return parse_numero_br(digitado, padrao=float(valor_atual), minimo=minimo)
+        if vazio_inicial and float(valor_atual) == 0.0:
+            st.session_state[txt_key] = ""
+        else:
+            st.session_state[txt_key] = fmt_br(float(valor_atual), casas)
+    digitado = st.text_input(label, key=txt_key, placeholder=placeholder)
+    return parse_numero_br(digitado, padrao=0.0 if vazio_inicial else float(valor_atual), minimo=minimo)
 
 
 def input_inteiro_br(
@@ -266,12 +271,18 @@ def input_inteiro_br(
     valor_atual: int,
     key: str,
     minimo: int = 0,
+    placeholder: str = "",
+    vazio_inicial: bool = False,
 ) -> int:
     txt_key = f"_txt_{key}"
     if txt_key not in st.session_state:
-        st.session_state[txt_key] = fmt_br(float(valor_atual), 0)
-    digitado = st.text_input(label, key=txt_key)
-    val = int(round(parse_numero_br(digitado, padrao=float(valor_atual), minimo=float(minimo))))
+        if vazio_inicial and int(valor_atual) == 0:
+            st.session_state[txt_key] = ""
+        else:
+            st.session_state[txt_key] = fmt_br(float(valor_atual), 0)
+    digitado = st.text_input(label, key=txt_key, placeholder=placeholder)
+    padrao_calc = 0.0 if vazio_inicial else float(valor_atual)
+    val = int(round(parse_numero_br(digitado, padrao=padrao_calc, minimo=float(minimo))))
     return max(val, minimo)
 
 
@@ -707,17 +718,18 @@ def inicializar_sessao(lista_produtos: List[str]) -> None:
         "rend_fps": 10.0,
         "rend_oleo": 12.67,
         "aves_next_id": 3,
-        # --- Fábrica de Ração Comercial ---
+        # --- Fábrica de Ração Comercial (espécie e volume iniciam vazios) ---
         "fab_etapa": 0,
         "fab_misturadores": [
             {"id": 1, "capacidade_kg": 2000, "observacao": ""},
         ],
         "fab_next_mist_id": 2,
         "fab_especies": [
-            {"id": 1, "especie": "Aves", "volume": 5000, "observacao": ""},
+            {"id": 1, "especie": "", "volume": 0, "observacao": ""},
         ],
         "fab_next_esp_id": 2,
-        "fab_next_cesta_id": 2,
+        "fab_cesta": [],
+        "fab_next_cesta_id": 1,
         # --- FFO Bovinos (Base Provisória) ---
         "bov_etapa": 0,
         "bov_mp_ton": 4000.0,
@@ -757,21 +769,6 @@ def inicializar_sessao(lista_produtos: List[str]) -> None:
                 "preco_kg": 18.00,
                 "share": 100,
             },
-        ]
-
-    if "fab_cesta" not in st.session_state:
-        st.session_state.fab_cesta = [
-            {
-                "id": 1,
-                "esp_id": 1,
-                "especie": "Aves",
-                "ponto": "Misturador",
-                "produto": prod_inicial,
-                "dosagem": 0.000,
-                "observacao": "",
-                "preco_kg": 0.00,
-                "share": 100,
-            }
         ]
 
     if "bov_cesta" not in st.session_state:
@@ -820,14 +817,16 @@ def inicializar_sessao(lista_produtos: List[str]) -> None:
 
 
 # =============================================================================
-# COMPONENTES REUTILIZÁVEIS (NAVEGAÇÃO, CADASTRO CLIENTE, CONSULTA FT, PDF)
+# NAVEGAÇÃO (SEM CONFLITO DE WIDGET KEY)
 # =============================================================================
 def navegar_para(ecossistema: str) -> None:
     st.session_state["ecossistema_ativo"] = ecossistema
     st.rerun()
 
+
 def mudar_etapa(chave_estado: str, nova_etapa: int) -> None:
     st.session_state[chave_estado] = nova_etapa
+    st.rerun()
 
 
 def renderizar_setas_etapa(chave_estado: str, etapa_atual: int, total_etapas: int) -> None:
@@ -835,25 +834,26 @@ def renderizar_setas_etapa(chave_estado: str, etapa_atual: int, total_etapas: in
     c_ant, _, c_prox = st.columns([1.4, 3.2, 1.4])
     with c_ant:
         if etapa_atual > 0:
-            st.button(
+            if st.button(
                 "⬅️ Etapa Anterior",
                 key=f"btn_ant_{chave_estado}_{etapa_atual}",
-                on_click=mudar_etapa,
-                args=(chave_estado, etapa_atual - 1),
                 use_container_width=True,
-            )
+            ):
+                mudar_etapa(chave_estado, etapa_atual - 1)
     with c_prox:
         if etapa_atual < total_etapas - 1:
-            st.button(
+            if st.button(
                 "Próxima Etapa ➡️",
                 key=f"btn_prox_{chave_estado}_{etapa_atual}",
-                on_click=mudar_etapa,
-                args=(chave_estado, etapa_atual + 1),
                 type="primary",
                 use_container_width=True,
-            )
+            ):
+                mudar_etapa(chave_estado, etapa_atual + 1)
 
 
+# =============================================================================
+# COMPONENTES REUTILIZÁVEIS (CADASTRO CLIENTE, CONSULTA FT, PDF)
+# =============================================================================
 def renderizar_etapa_cadastro_cliente(
     ecossistema_label: str,
     resumo_volume_str: str,
@@ -1127,7 +1127,6 @@ def renderizar_bloco_pdf(
 
 # =============================================================================
 # TELA INICIAL: PORTAL DE ECOSSISTEMAS (HUB CENTRAL)
-# Ordem: 1. Consulta de FTs | 2. Fábrica de Ração | 3. Avicultura | 4. FFO Bovinos | 5. FFO Suínos
 # =============================================================================
 def renderizar_portal_hub(df_produtos: pd.DataFrame, df_garantias: pd.DataFrame) -> None:
     st.title("🌐 Portal Comercial & Técnico CFS")
@@ -1221,6 +1220,8 @@ def renderizar_portal_hub(df_produtos: pd.DataFrame, df_garantias: pd.DataFrame)
         )
         if st.button("Abrir FFO Suínos ➡️", key="card_btn_sui", use_container_width=True):
             navegar_para("ffo_suinos")
+
+
 # =============================================================================
 # ECOSSISTEMA 1: AVICULTURA
 # =============================================================================
@@ -1325,63 +1326,63 @@ def renderizar_ecossistema_avicultura(
                 )
 
         with col2:
-            st.subheader("⚙️ Índices Zootécnicos e Industriais")
-            p_c1, p_c2 = st.columns(2)
-            with p_c1:
-                st.session_state.consumo_ave = input_numero_br(
-                    "Consumo Ração/Ave (kg):",
-                    float(st.session_state.consumo_ave),
-                    key="aves_cons_ave",
-                    casas=2,
-                    minimo=0.1,
-                )
-                obs_discreta("Consumo total de ração pela ave até o abate.")
+            with st.expander("⚙️ Índices Zootécnicos e Industriais", expanded=False):
+                p_c1, p_c2 = st.columns(2)
+                with p_c1:
+                    st.session_state.consumo_ave = input_numero_br(
+                        "Consumo Ração/Ave (kg):",
+                        float(st.session_state.consumo_ave),
+                        key="aves_cons_ave",
+                        casas=2,
+                        minimo=0.1,
+                    )
+                    obs_discreta("Consumo total de ração pela ave até o abate.")
 
-                st.session_state.peso_ave = input_numero_br(
-                    "Peso Vivo Médio (kg):",
-                    float(st.session_state.peso_ave),
-                    key="aves_peso_ave",
-                    casas=2,
-                    minimo=0.1,
-                )
-                obs_discreta("Peso vivo médio da ave no momento do abate.")
+                    st.session_state.peso_ave = input_numero_br(
+                        "Peso Vivo Médio (kg):",
+                        float(st.session_state.peso_ave),
+                        key="aves_peso_ave",
+                        casas=2,
+                        minimo=0.1,
+                    )
+                    obs_discreta("Peso vivo médio da ave no momento do abate.")
 
-                st.session_state.rend_mp_pv = input_numero_br(
-                    "Rendimento MP s/ PV (%):",
-                    float(st.session_state.rend_mp_pv),
-                    key="aves_rend_mp",
-                    casas=2,
-                    minimo=0.1,
-                )
-                obs_discreta("Proporção do PV que é destinado na forma de matéria-prima para FFO.")
+                    st.session_state.rend_mp_pv = input_numero_br(
+                        "Rendimento MP s/ PV (%):",
+                        float(st.session_state.rend_mp_pv),
+                        key="aves_rend_mp",
+                        casas=2,
+                        minimo=0.1,
+                    )
+                    obs_discreta("Proporção do PV que é destinado na forma de matéria-prima para FFO.")
 
-            with p_c2:
-                st.session_state.rend_fv = input_numero_br(
-                    "Rendimento FV s/ MP (%):",
-                    float(st.session_state.rend_fv),
-                    key="aves_rend_fv",
-                    casas=2,
-                    minimo=0.1,
-                )
-                obs_discreta("Proporção da MP que é convertida em farinha de vísceras.")
+                with p_c2:
+                    st.session_state.rend_fv = input_numero_br(
+                        "Rendimento FV s/ MP (%):",
+                        float(st.session_state.rend_fv),
+                        key="aves_rend_fv",
+                        casas=2,
+                        minimo=0.1,
+                    )
+                    obs_discreta("Proporção da MP que é convertida em farinha de vísceras.")
 
-                st.session_state.rend_fps = input_numero_br(
-                    "Rendimento FPS s/ MP (%):",
-                    float(st.session_state.rend_fps),
-                    key="aves_rend_fps",
-                    casas=2,
-                    minimo=0.1,
-                )
-                obs_discreta("Proporção da MP que é convertida em farinha de penas e sangue.")
+                    st.session_state.rend_fps = input_numero_br(
+                        "Rendimento FPS s/ MP (%):",
+                        float(st.session_state.rend_fps),
+                        key="aves_rend_fps",
+                        casas=2,
+                        minimo=0.1,
+                    )
+                    obs_discreta("Proporção da MP que é convertida em farinha de penas e sangue.")
 
-                st.session_state.rend_oleo = input_numero_br(
-                    "Rendimento Óleo s/ MP (%):",
-                    float(st.session_state.rend_oleo),
-                    key="aves_rend_oleo",
-                    casas=2,
-                    minimo=0.1,
-                )
-                obs_discreta("Proporção da MP que é convertida em óleo de aves.")
+                    st.session_state.rend_oleo = input_numero_br(
+                        "Rendimento Óleo s/ MP (%):",
+                        float(st.session_state.rend_oleo),
+                        key="aves_rend_oleo",
+                        casas=2,
+                        minimo=0.1,
+                    )
+                    obs_discreta("Proporção da MP que é convertida em óleo de aves.")
 
         aves_mes, volumes = calcular_balanco_massa_aves(
             tipo_gatilho=st.session_state.tipo_gatilho,
@@ -1668,9 +1669,14 @@ def renderizar_ecossistema_avicultura(
 # ECOSSISTEMA 2: FÁBRICA DE RAÇÃO COMERCIAL
 # =============================================================================
 def sincronizar_especies_cesta_fabrica(lista_produtos: List[str]) -> None:
-    especies_cadastradas = st.session_state.fab_especies
+    """Carrega na cesta apenas espécies com nome selecionado e volume > 0."""
+    especies_validas = [
+        e
+        for e in st.session_state.fab_especies
+        if str(e.get("especie", "")).strip() and int(e.get("volume", 0)) > 0
+    ]
     ids_presentes_na_cesta = {it.get("esp_id") for it in st.session_state.fab_cesta}
-    mapa_esp_atual = {e["id"]: e["especie"] for e in especies_cadastradas}
+    mapa_esp_atual = {e["id"]: e["especie"] for e in especies_validas}
 
     for it in st.session_state.fab_cesta:
         eid = it.get("esp_id")
@@ -1678,7 +1684,7 @@ def sincronizar_especies_cesta_fabrica(lista_produtos: List[str]) -> None:
             it["especie"] = mapa_esp_atual[eid]
 
     prod_padrao = lista_produtos[0] if lista_produtos else ""
-    for esp in especies_cadastradas:
+    for esp in especies_validas:
         if esp["id"] not in ids_presentes_na_cesta:
             st.session_state.fab_cesta.append(
                 {
@@ -1708,7 +1714,7 @@ def renderizar_ecossistema_fabrica_racao(
 
     etapas = [
         "0. Cadastro Cliente",
-        "1. Misturadores & Volumes por Espécie",
+        "1. Produção",
         "2. Produtos & Dosagens",
         "3. Faturamento & Proposta",
     ]
@@ -1728,8 +1734,10 @@ def renderizar_ecossistema_fabrica_racao(
 
     vol_por_especie: Dict[str, int] = {}
     for esp in st.session_state.fab_especies:
-        nome_e = esp["especie"]
-        vol_por_especie[nome_e] = vol_por_especie.get(nome_e, 0) + int(esp["volume"])
+        nome_e = str(esp.get("especie", "")).strip()
+        vol_e = int(esp.get("volume", 0))
+        if nome_e and vol_e > 0:
+            vol_por_especie[nome_e] = vol_por_especie.get(nome_e, 0) + vol_e
     vol_total_fabrica = sum(vol_por_especie.values())
     vol_por_especie["Total Fábrica de Ração"] = vol_total_fabrica
 
@@ -1741,7 +1749,7 @@ def renderizar_ecossistema_fabrica_racao(
 
     # ETAPA 1
     elif st.session_state.fab_etapa == 1:
-        st.header("Etapa 1: Misturadores & Volumes por Espécie")
+        st.header("Etapa 1: Produção")
         if st.session_state.cliente_nome:
             st.info(f"👤 **Cliente Ativo:** {st.session_state.cliente_nome}")
 
@@ -1796,27 +1804,32 @@ def renderizar_ecossistema_fabrica_racao(
         st.markdown("---")
 
         st.subheader("🌾 Volumes por Espécie (ton/mês)")
+        opcoes_esp_com_vazio = [""] + ESPECIES_FABRICA
         esp_remover: List[int] = []
         for idx, esp in enumerate(st.session_state.fab_especies):
             ce1, ce2, ce3, ce4 = st.columns([2.2, 1.8, 3.3, 0.7])
             with ce1:
+                esp_atual = str(esp.get("especie", ""))
                 esp_idx = (
-                    ESPECIES_FABRICA.index(esp["especie"])
-                    if esp["especie"] in ESPECIES_FABRICA
+                    opcoes_esp_com_vazio.index(esp_atual)
+                    if esp_atual in opcoes_esp_com_vazio
                     else 0
                 )
                 esp["especie"] = st.selectbox(
                     f"Espécie #{idx + 1}:",
-                    options=ESPECIES_FABRICA,
+                    options=opcoes_esp_com_vazio,
                     index=esp_idx,
+                    format_func=lambda x: "Selecione a espécie..." if x == "" else x,
                     key=f"fab_esp_sel_{esp['id']}",
                 )
             with ce2:
                 esp["volume"] = input_inteiro_br(
                     f"Volume (ton/mês) #{idx + 1}:",
-                    int(esp["volume"]),
+                    int(esp.get("volume", 0)),
                     key=f"fab_esp_vol_{esp['id']}",
                     minimo=0,
+                    placeholder="Ex.: 5000",
+                    vazio_inicial=True,
                 )
             with ce3:
                 esp["observacao"] = st.text_input(
@@ -1839,12 +1852,10 @@ def renderizar_ecossistema_fabrica_racao(
             st.rerun()
 
         if st.button("➕ Adicionar espécie", key="fab_add_esp"):
-            usadas = {e["especie"] for e in st.session_state.fab_especies}
-            proxima_esp = next((x for x in ESPECIES_FABRICA if x not in usadas), "Outros")
             st.session_state.fab_especies.append(
                 {
                     "id": st.session_state.fab_next_esp_id,
-                    "especie": proxima_esp,
+                    "especie": "",
                     "volume": 0,
                     "observacao": "",
                 }
@@ -1854,8 +1865,10 @@ def renderizar_ecossistema_fabrica_racao(
 
         vol_por_especie = {}
         for esp in st.session_state.fab_especies:
-            nome_e = esp["especie"]
-            vol_por_especie[nome_e] = vol_por_especie.get(nome_e, 0) + int(esp["volume"])
+            nome_e = str(esp.get("especie", "")).strip()
+            vol_e = int(esp.get("volume", 0))
+            if nome_e and vol_e > 0:
+                vol_por_especie[nome_e] = vol_por_especie.get(nome_e, 0) + vol_e
         vol_total_fabrica = sum(vol_por_especie.values())
 
         st.markdown("---")
@@ -1894,9 +1907,31 @@ def renderizar_ecossistema_fabrica_racao(
         st.markdown("---")
         st.subheader("🛒 Cesta de Aplicação por Espécie & Ponto (Dosagem em kg/ton)")
 
-        opcoes_esp_cesta = [e["especie"] for e in st.session_state.fab_especies]
+        opcoes_esp_cesta = [
+            str(e["especie"]).strip()
+            for e in st.session_state.fab_especies
+            if str(e.get("especie", "")).strip()
+        ]
+        if not opcoes_esp_cesta:
+            opcoes_esp_cesta = list(ESPECIES_FABRICA)
         if "Total Fábrica de Ração" not in opcoes_esp_cesta:
             opcoes_esp_cesta.append("Total Fábrica de Ração")
+
+        if not st.session_state.fab_cesta:
+            st.session_state.fab_cesta.append(
+                {
+                    "id": st.session_state.fab_next_cesta_id,
+                    "esp_id": None,
+                    "especie": opcoes_esp_cesta[0],
+                    "ponto": "Misturador",
+                    "produto": lista_produtos[0] if lista_produtos else "",
+                    "dosagem": 0.000,
+                    "observacao": "",
+                    "preco_kg": 0.00,
+                    "share": 100,
+                }
+            )
+            st.session_state.fab_next_cesta_id += 1
 
         itens_remover: List[int] = []
         itens_duplicar: List[Dict[str, Any]] = []
@@ -2020,7 +2055,7 @@ def renderizar_ecossistema_fabrica_racao(
                 {
                     "id": st.session_state.fab_next_cesta_id,
                     "esp_id": None,
-                    "especie": opcoes_esp_cesta[0] if opcoes_esp_cesta else "Aves",
+                    "especie": opcoes_esp_cesta[0],
                     "ponto": "Misturador",
                     "produto": lista_produtos[0] if lista_produtos else "",
                     "dosagem": 0.000,
@@ -2574,7 +2609,7 @@ def renderizar_modulo_consulta_ft(df_produtos: pd.DataFrame, df_garantias: pd.Da
         row_p = df_produtos[df_produtos["produto"] == prod_sel].iloc[0]
         entrega = calcular_entrega_ativos_kg_ton(str(row_p["id_produto"]), dose_sim, df_garantias)
         st.info(
-            f"**{prod_sel}** ({row_p['estado_fisico']} | {row_p['ft_revisao']})\n\n"
+            f"**{prod_sel}** ({row_p['estado_fisico']} | {row_p['ft_revisao']})  \n"
             f"**Entrega:** {entrega['detalhe_texto']}"
         )
 
