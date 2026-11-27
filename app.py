@@ -823,7 +823,6 @@ def navegar_para(ecossistema: str) -> None:
     st.session_state["ecossistema_ativo"] = ecossistema
     st.rerun()
 
-
 def mudar_etapa(chave_estado: str, nova_etapa: int) -> None:
     st.session_state[chave_estado] = nova_etapa
     st.rerun()
