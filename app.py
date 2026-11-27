@@ -1792,6 +1792,10 @@ def renderizar_ecossistema_avicultura(
             )
 
             nome_pdf = f"{item['produto']} ({ativos_curto})" if ativos_curto else item["produto"]
+            obs_pdf_item = (
+                item.get("observacao", "").strip()
+                or f"{item.get('especie', '')} - {item.get('ponto', '')}".strip(" -")
+            )
             linhas_proposta_pdf.append(
                 {
                     "produto_pdf": nome_pdf,
@@ -1799,7 +1803,7 @@ def renderizar_ecossistema_avicultura(
                     "qtd_mensal": consumo_real_kg,
                     "preco_kg": preco_kg,
                     "custo_ton": custo_ton_tratada,
-                    "obs_pdf": item.get("observacao", "").strip() or item["matriz"],
+                    "obs_pdf": obs_pdf_item,
                 }
             )
 
@@ -2317,20 +2321,9 @@ def renderizar_ecossistema_fabrica_racao(
                     "qtd_mensal": consumo_real_kg,
                     "preco_kg": preco_kg,
                     "custo_ton": custo_ton_tratada,
-                    "obs_pdf_item = (
-    item.get("observacao", "").strip()
-    or f"{item.get('especie', '')} - {item.get('ponto', '')}".strip(" -")
-)
-linhas_proposta_pdf.append(
-    {
-        "produto_pdf": nome_pdf,
-        "dosagem": dosagem,
-        "qtd_mensal": consumo_real_kg,
-        "preco_kg": preco_kg,
-        "custo_ton": custo_ton_tratada,
-        "obs_pdf": obs_pdf_item,
-    }
-)
+                    "obs_pdf": item.get("observacao", "").strip() or item["matriz"],
+                }
+            )
 
         df_fin = pd.DataFrame(linhas_financeiro)
         st.subheader("💼 Resumo Executivo da Conta (US$)")
@@ -2834,7 +2827,7 @@ def renderizar_cabecalho_cfs() -> None:
 def main() -> None:
     aplicar_estilos_css()
     renderizar_cabecalho_global()
-    
+    renderizar_cabecalho_cfs()
 
     if not autenticar_usuario():
         return
